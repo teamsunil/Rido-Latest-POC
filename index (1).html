@@ -1,0 +1,1881 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Rido · Connected Travel POC (v1.6.1)</title>
+<style>
+:root{--bg:#0b0b0d;--panel:#141417;--card:#1c1c21;--card2:#27272e;--line:#2f2f38;--tx:#f5f5f7;--mu:#9e9eab;--or:#f26a1b;--or2:#ff8c42;--ok:#22c55e;--wa:#f5b301;--bad:#ef4444;--in:#60a5fa}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;min-height:100%}
+body{background:var(--bg);color:var(--tx);font:14px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;padding:0;text-align:inherit}
+button:disabled{cursor:not-allowed;opacity:.45}
+input{font:inherit;color:inherit}
+h1,h2,h3,h4{margin:0}
+.top{display:flex;align-items:center;gap:14px;padding:14px 22px;border-bottom:1px solid var(--line);position:sticky;top:0;background:rgba(11,11,13,.94);backdrop-filter:blur(8px);z-index:20;flex-wrap:wrap}
+.logo{font-weight:900;letter-spacing:.14em;color:var(--or);font-size:18px}
+.sub{color:var(--mu);font-size:12px}
+.rst{padding:8px 12px;border-radius:10px;border:1px solid var(--line);color:var(--mu);font-size:13px;font-weight:600}
+.rst:hover{color:var(--tx);border-color:var(--or)}
+.tabs{margin-left:auto;display:flex;gap:4px;background:var(--card);border-radius:12px;padding:4px}
+.tabs button{padding:8px 14px;border-radius:9px;color:var(--mu);font-weight:600;font-size:13px}
+.tabs button.on{background:var(--or);color:#fff}
+.tab{display:none}.tab.on{display:block}
+.toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(20px);background:#fff;color:#111;padding:10px 16px;border-radius:12px;font-weight:600;font-size:13px;opacity:0;transition:.25s;pointer-events:none;z-index:99;max-width:90vw;text-align:center}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ---------- Customer app stage ---------- */
+.stage{display:grid;grid-template-columns:auto minmax(260px,430px);gap:28px;justify-content:center;padding:26px 20px 60px;align-items:start}
+.phone{width:390px;height:844px;background:#000;border:10px solid #25252c;border-radius:46px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 30px 80px rgba(0,0,0,.55);position:relative}
+.status{height:40px;flex:none;display:flex;justify-content:space-between;align-items:center;padding:0 28px;font-size:13px;font-weight:700;background:#000}
+#app{flex:1;overflow-y:auto;background:var(--bg);scrollbar-width:none;position:relative}
+#app::-webkit-scrollbar{display:none}
+#bnav{flex:none;height:68px;background:var(--panel);border-top:1px solid var(--line);display:flex;justify-content:space-around;align-items:center;padding-bottom:6px}
+.nb{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;color:var(--mu);padding:6px 10px}
+.nb .ic{font-size:19px}
+.nb.on{color:var(--or);font-weight:700}
+.notes{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:20px;position:sticky;top:90px}
+.notes h4{color:var(--or2);font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px}
+.notes p{margin:0 0 10px;color:#d7d7de}
+.notes .meta{margin-top:14px;font-size:12px;color:var(--mu);border-top:1px solid var(--line);padding-top:12px}
+@media (max-width:900px){.stage{grid-template-columns:1fr;padding:12px}.phone{width:100%;max-width:430px;height:calc(100vh - 140px);min-height:640px;margin:0 auto;border-width:6px;border-radius:34px}.notes{position:static}}
+
+/* ---------- Screen components ---------- */
+.pad{padding:12px 16px 26px}
+.hdr{display:flex;align-items:center;gap:10px;padding:12px 16px 10px}
+.hdr h2{font-size:18px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ib{width:36px;height:36px;border-radius:50%;background:var(--card);display:grid;place-items:center;font-size:16px;position:relative;flex:none}
+.dotn{position:absolute;top:-2px;right:-2px;background:var(--or);color:#fff;font-size:10px;font-weight:700;border-radius:99px;padding:1px 5px}
+.sp{flex:1}
+.row{display:flex;align-items:center;gap:10px}
+.mu{color:var(--mu);font-size:12.5px}
+.h3{font-size:14.5px;font-weight:700;margin:16px 0 8px;display:flex;align-items:baseline;gap:8px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:12px}
+.card.warn{background:rgba(245,179,1,.08);border-color:rgba(245,179,1,.35);color:#f6e7b0;font-size:13px}
+.card.tip{background:rgba(242,106,27,.08);border-color:rgba(242,106,27,.35)}
+.btn{display:block;width:100%;text-align:center;padding:14px;border-radius:14px;background:var(--or);color:#fff;font-weight:700;margin:10px 0 0}
+.btn.g{background:var(--card2);color:var(--tx)}
+.btn.sm{display:inline-block;width:auto;padding:8px 12px;font-size:13px;margin:0;border-radius:10px}
+.btn.sm.g{background:var(--card2)}
+.lnk{color:var(--or2);font-weight:600;font-size:13px;padding:6px 0;display:inline-block}
+.pill{display:inline-block;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:700;background:var(--card2);color:var(--mu);white-space:nowrap}
+.pill.ok{background:rgba(34,197,94,.15);color:var(--ok)}
+.pill.wa{background:rgba(245,179,1,.15);color:var(--wa)}
+.pill.bad{background:rgba(239,68,68,.15);color:var(--bad)}
+.pill.in{background:rgba(96,165,250,.15);color:var(--in)}
+.pill.or{background:rgba(242,106,27,.15);color:var(--or2)}
+.pill.new{background:var(--or);color:#fff}
+.pill.gr{background:var(--card2);color:var(--mu)}
+.field{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:11px 14px;margin-bottom:10px}
+.field label{display:block;font-size:10.5px;color:var(--mu);text-transform:uppercase;letter-spacing:.07em;margin-bottom:2px}
+.field input{background:none;border:0;width:100%;outline:none;font-size:15px;padding:0}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.chips{display:flex;gap:8px;overflow-x:auto;padding:2px 0 8px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;padding:8px 13px;border-radius:999px;background:var(--card);border:1px solid var(--line);font-size:13px;white-space:nowrap}
+.chip.on{background:rgba(242,106,27,.18);border-color:var(--or);color:#ffd9c2}
+.seg{display:flex;background:var(--card);border-radius:12px;padding:4px;margin-bottom:12px;gap:4px}
+.seg button{flex:1;padding:9px 6px;border-radius:9px;color:var(--mu);font-weight:600;font-size:13px}
+.seg button.on{background:var(--card2);color:var(--tx)}
+.seg button.dis{opacity:.4}
+.tog{width:44px;height:26px;border-radius:99px;background:var(--card2);position:relative;flex:none}
+.tog:after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:.2s}
+.tog.on{background:var(--or)}
+.tog.on:after{left:21px}
+.kv{display:flex;justify-content:space-between;gap:10px;padding:6px 0;font-size:13.5px}
+.kv span{color:var(--mu)}
+.kv.tot{border-top:1px solid var(--line);margin-top:6px;padding-top:10px;font-size:15px}
+.hint{background:var(--card);border-radius:12px;padding:10px 12px;font-size:12.5px;color:var(--mu);margin:4px 0 10px}
+.bar{height:8px;background:var(--card2);border-radius:99px;overflow:hidden;margin:10px 0 6px}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--or),var(--or2))}
+.center{text-align:center;padding:40px 22px}
+.center h3{font-size:20px;margin:14px 0 6px}
+.bigic{width:76px;height:76px;border-radius:50%;margin:0 auto;display:grid;place-items:center;font-size:36px;font-weight:700}
+.bigic.ok{background:rgba(34,197,94,.15);color:var(--ok)}
+.bigic.bad{background:rgba(239,68,68,.15);color:var(--bad)}
+.spin{width:56px;height:56px;border-radius:50%;border:5px solid var(--card2);border-top-color:var(--or);margin:20px auto;animation:spin 0.9s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.tbanner{background:linear-gradient(90deg,rgba(242,106,27,.25),rgba(242,106,27,.08));border:1px solid rgba(242,106,27,.5);border-radius:14px;padding:12px 14px;margin:0 16px 10px;font-size:13px}
+.thumb{height:120px;border-radius:16px;background:linear-gradient(135deg,#3b2a22,#1d1d24 60%,#2a1b14);margin-bottom:12px;display:flex;align-items:flex-end;padding:12px;color:#ffd9c2;font-weight:700}
+
+/* home */
+.greet{padding:14px 16px 6px}
+.micbar{display:flex;align-items:center;gap:12px;width:100%;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;color:var(--mu);margin-bottom:14px;font-size:14px;text-align:left}
+.micbar .mi{width:40px;height:40px;border-radius:50%;background:var(--or);display:grid;place-items:center;flex:none}
+.svcgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.svct{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px;text-align:left;position:relative;min-height:112px}
+.svct .em{font-size:26px}
+.svct b{display:block;font-size:15px;margin-top:6px}
+.svct .mu{font-size:12px}
+.svct .pill{position:absolute;top:12px;right:12px;font-size:10px}
+.listrow{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line);width:100%;text-align:left}
+.listrow .ico{width:36px;height:36px;border-radius:12px;background:var(--card);display:grid;place-items:center;font-size:17px;flex:none}
+
+/* voice */
+.vwrap{min-height:100%;display:flex;flex-direction:column;padding:6px 18px 24px}
+.vhead h1{font-size:24px;margin:20px 0 6px;text-align:center}
+.vhead p{text-align:center;margin:0 0 6px}
+.micbig{display:block;margin:28px auto 0;width:156px;height:156px;border-radius:50%;background:linear-gradient(145deg,var(--or),#b43c0c);display:grid;place-items:center;box-shadow:0 0 0 0 rgba(242,106,27,.6)}
+.micbig.listen{animation:pulse 1.2s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(242,106,27,.55)}70%{box-shadow:0 0 0 40px rgba(242,106,27,0)}100%{box-shadow:0 0 0 0 rgba(242,106,27,0)}}
+.heard{margin-top:22px}
+.kvl{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px dashed var(--line);font-size:13.5px}
+.kvl span{color:var(--mu)}
+
+/* cab */
+.cab .rng{margin:8px 0 2px;font-size:17px}
+.tr{text-align:right}
+
+/* flight / hotel / bus cards */
+.fl .tr b{font-size:15px}
+.topbox{border:1px solid rgba(242,106,27,.45);background:rgba(242,106,27,.06);border-radius:16px;padding:12px;margin-bottom:12px}
+.topbox .lab{font-size:11px;color:var(--or2);text-transform:uppercase;letter-spacing:.06em;font-weight:700;margin-bottom:6px}
+.dates{display:flex;gap:8px;overflow-x:auto;margin:6px 0 12px;scrollbar-width:none}
+.dates button{flex:none;width:72px;padding:9px 4px;border-radius:14px;background:var(--card);border:1px solid var(--line);text-align:center;font-size:12px}
+.dates button b{display:block;font-size:14px}
+.dates button.on{border-color:var(--or);background:rgba(242,106,27,.15)}
+.dates button .p{color:var(--ok);font-size:11px;font-weight:700;margin-top:2px}
+.addon{display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--line)}
+.trav{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.av{width:38px;height:38px;border-radius:50%;background:var(--card2);display:grid;place-items:center;font-weight:700;flex:none}
+
+/* seats */
+.seats{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px}
+.seat{height:34px;border-radius:8px;background:var(--card2);font-size:11px;font-weight:700;color:var(--mu);display:grid;place-items:center}
+.seat.bk{background:#111;color:#444;cursor:not-allowed}
+.seat.sel{background:var(--or);color:#fff}
+.seat.aisle{background:transparent}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--mu);margin:10px 0}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:4px;vertical-align:middle;margin-right:5px}
+
+/* hotel room */
+.room{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:10px;width:100%;text-align:left}
+.room.on{border-color:var(--or);background:rgba(242,106,27,.08)}
+.radio{width:20px;height:20px;border-radius:50%;border:2px solid var(--mu);flex:none;display:grid;place-items:center}
+.room.on .radio{border-color:var(--or)}
+.room.on .radio:after{content:"";width:10px;height:10px;border-radius:50%;background:var(--or)}
+
+/* trips */
+.tripcard{background:linear-gradient(135deg,#2a1d16,#1c1c21 70%);border:1px solid rgba(242,106,27,.35);border-radius:18px;padding:16px;margin-bottom:12px;width:100%;text-align:left;display:block}
+.tripcard h3{font-size:18px;margin:4px 0 2px}
+.icons{font-size:18px;margin-top:10px;letter-spacing:6px}
+.tlwrap{position:relative;margin-top:6px}
+.tlwrap:before{content:"";position:absolute;left:16px;top:24px;bottom:24px;width:2px;background:var(--line)}
+.tli{display:flex;gap:10px;margin-bottom:10px;position:relative}
+.tl-ic{width:34px;height:34px;flex:none;border-radius:50%;background:var(--card2);display:grid;place-items:center;font-size:15px;margin-top:12px;position:relative;z-index:1}
+.tl-c{flex:1;margin-bottom:0;min-width:0}
+.delaybanner{margin:0 16px 10px;padding:12px 14px;border-radius:14px;background:rgba(245,179,1,.12);border:1px solid rgba(245,179,1,.45);color:#f8e3a0;font-size:13px}
+.memcard{background:linear-gradient(135deg,#3a2216,#1c1c21);border:1px solid rgba(242,106,27,.4);border-radius:18px;padding:16px;margin-bottom:12px}
+.plan{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px;margin-bottom:12px}
+.plan.on{border-color:var(--or)}
+.plan .price{font-size:18px;font-weight:800;margin:8px 0 2px}
+.plan ul{margin:8px 0 0;padding-left:18px;color:#d7d7de;font-size:13px}
+.plan li{margin-bottom:3px}
+.big{font-size:30px;font-weight:800;margin:6px 0}
+
+/* planner */
+.day{}
+.slot{display:flex;gap:12px;padding:8px 0;border-top:1px solid var(--line)}
+.slot>span:first-child{width:72px;flex:none;font-size:12px}
+
+/* chat */
+.chat{padding:12px 14px 6px;display:flex;flex-direction:column;gap:10px;min-height:340px}
+.bub{max-width:86%;padding:10px 13px;border-radius:16px;font-size:13.5px;line-height:1.45}
+.bub.ai{background:var(--card);border:1px solid var(--line);border-bottom-left-radius:6px;align-self:flex-start}
+.bub.u{background:var(--or);color:#fff;align-self:flex-end;border-bottom-right-radius:6px}
+.bub .lnk,.bub .btn{margin:6px 0 0}
+.cc{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+.cc-i{background:var(--card2);border-radius:12px;padding:10px;display:flex;align-items:center;gap:8px}
+.chatbar{display:flex;gap:8px;align-items:center;padding:10px 12px;border-top:1px solid var(--line);background:var(--panel)}
+.chatbar input{flex:1;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:11px 13px;outline:none;font-size:14px}
+.chatbar .btn{margin:0;padding:11px 14px;width:auto;font-size:13px;border-radius:12px}
+.chatwrap{display:flex;flex-direction:column;height:100%}
+.chatwrap .chatscroll{flex:1;overflow-y:auto}
+
+/* notifications */
+.nt{display:flex;gap:12px}
+.nt.unread{border-color:rgba(242,106,27,.5)}
+.nt .ic{font-size:22px;flex:none}
+
+/* ---------- Flow map ---------- */
+.flow{max-width:1200px;margin:0 auto;padding:28px 22px 80px}
+.fh h2{font-size:28px}
+.fh p{color:var(--mu);max-width:820px;margin:8px 0 14px}
+.legend2{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.lane{margin-top:28px}
+.lane>.lbl{font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--or2);font-weight:800;margin-bottom:10px}
+.box{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 16px;color:var(--tx);width:100%;text-align:left}
+button.box:hover{border-color:var(--or)}
+.box b{display:block;font-size:15px}
+.box span{color:var(--mu);font-size:12.5px}
+.entry{display:grid;grid-template-columns:1fr 50px 1fr;align-items:stretch;gap:10px}
+.arw{align-self:center;text-align:center;color:var(--mu);font-size:24px}
+.cols{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.svc{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;border-top:4px solid var(--or)}
+.svc.unch{border-top-color:var(--gr,#6b7280)}
+.svc h4{font-size:16px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.svc .mu{margin:4px 0 6px}
+.step{display:flex;gap:9px;align-items:center;width:100%;text-align:left;background:var(--card2);border-radius:10px;padding:8px 10px;margin-top:6px;font-size:13px}
+.step:hover{outline:1px solid var(--or)}
+.step i{font-style:normal;flex:none;width:20px;height:20px;border-radius:50%;background:var(--or);color:#fff;font-size:11px;font-weight:700;display:grid;place-items:center}
+.shared{display:grid;grid-template-columns:repeat(6,1fr);gap:12px}
+.chain{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;align-items:stretch}
+.chain .box{font-size:13px}
+.two-l{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.panelx{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px}
+.panelx ul{margin:6px 0 0;padding-left:18px;color:#d7d7de;font-size:13.5px}
+.panelx li{margin-bottom:6px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{text-align:left;padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--mu);font-weight:600;font-size:12px}
+.sample{margin-top:24px;color:var(--mu);font-size:12px}
+@media (max-width:1000px){.cols{grid-template-columns:1fr 1fr}.shared,.chain,.admin-row{grid-template-columns:1fr 1fr 1fr}.two-l{grid-template-columns:1fr}}
+@media (max-width:620px){.cols,.shared,.chain{grid-template-columns:1fr}.entry{grid-template-columns:1fr}.arw{transform:rotate(90deg)}}
+
+/* ---------- Admin ---------- */
+.adm{display:grid;grid-template-columns:230px 1fr;min-height:760px;background:var(--panel);border:1px solid var(--line);border-radius:18px;overflow:hidden;max-width:1220px;margin:24px auto}
+.adm aside{background:#0f0f12;padding:18px;border-right:1px solid var(--line)}
+.adm aside button{display:block;width:100%;text-align:left;padding:10px 12px;border-radius:10px;color:var(--mu);margin-bottom:4px;font-size:14px}
+.adm aside button.on{background:rgba(242,106,27,.16);color:#ffd9c2;font-weight:600}
+.adm main{padding:22px 24px}
+.ah{font-size:20px;margin-bottom:14px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px}
+.kpi b{font-size:24px;display:block;margin:4px 0 2px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-top:14px}
+.panel h3{font-size:15px;margin-bottom:8px;display:flex;gap:8px;align-items:center}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+.ins{display:flex;gap:12px;align-items:flex-start;justify-content:space-between;border-top:1px solid var(--line);padding:12px 0}
+.ins:first-of-type{border-top:0}
+.ins .act{color:var(--or2);font-size:13px;margin-top:4px}
+.ins-b{display:flex;gap:6px;flex:none}
+.fbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.adm input,.adm select{background:var(--card2);border:1px solid var(--line);border-radius:9px;padding:7px 9px;color:var(--tx);font-size:13px;width:100%}
+.tg2{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}
+@media (max-width:820px){.adm{grid-template-columns:1fr}.two-col{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div>
+    <div class="logo">RIDO</div>
+    <div class="sub">New app flow &amp; proof of concept · v1.6.1 · sample data</div>
+  </div>
+  <nav class="tabs">
+    <button class="on" data-tab="flow">New app flow</button>
+    <button data-tab="app">Customer app</button>
+    <button data-tab="admin">Admin panel</button>
+  </nav>
+  <button class="rst" data-act="reset" title="Restart the demo with fresh sample data">↺ Reset demo</button>
+</header>
+
+<main>
+
+<!-- ============ TAB 1: FLOW MAP ============ -->
+<section id="tab-flow" class="tab on">
+  <div class="flow">
+    <div class="fh">
+      <h2>Rido: new app flow (v1.6.1)</h2>
+      <p>Rido moves from a cab comparison app to a connected travel app. Cabs keep the compare-and-redirect model. Flights, hotels and intercity buses are searched, paid for and confirmed inside Rido through TBO. My Trips, payments, membership, loyalty and notifications are shared across every service. Click any step to open that screen in the customer app.</p>
+      <div class="legend2">
+        <span class="pill new">NEW</span>
+        <span class="pill or">ENHANCED</span>
+        <span class="pill gr">UNCHANGED CORE</span>
+        <span class="pill ok">SHARED ACROSS SERVICES</span>
+      </div>
+    </div>
+
+    <div class="lane">
+      <div class="lbl">1 · Entry</div>
+      <div class="entry">
+        <button class="box" data-flow="voice"><b>Voice landing screen</b><span>NEW · takes the whole trip in one sentence · “Type instead” opens classic search</span></button>
+        <div class="arw">→</div>
+        <button class="box" data-flow="home"><b>Rido Home</b><span>Cabs · Flights · Hotels · Intercity Bus · My Trips · recent searches</span></button>
+      </div>
+    </div>
+
+    <div class="lane">
+      <div class="lbl">2 · Services from Home</div>
+      <div class="cols">
+        <div class="svc unch">
+          <h4>Cabs <span class="pill or">ENHANCED</span></h4>
+          <div class="mu">Compare &amp; redirect · booking stays in the provider app</div>
+          <button class="step" data-flow="cabSearch"><i>1</i>Search route (GPS re-detect, no map pin)</button>
+          <button class="step" data-flow="cabResults"><i>2</i>Compare Uber, Ola, Rapido</button>
+          <button class="step" data-flow="cabResults"><i>3</i>Cheapest and Fastest · AI fare tips</button>
+          <button class="step" data-flow="cabRedirect" data-arg="Uber"><i>4</i>Take ride → provider app</button>
+          <button class="step" data-flow="notifs"><i>5</i>“Did you take this ride?”</button>
+          <button class="step" data-flow="trips"><i>6</i>Activity &amp; savings</button>
+        </div>
+        <div class="svc">
+          <h4>Flights <span class="pill new">NEW</span></h4>
+          <div class="mu">Domestic &amp; international · via TBO</div>
+          <button class="step" data-flow="flightSearch"><i>1</i>Search airports &amp; dates</button>
+          <button class="step" data-flow="flightResults"><i>2</i>Results with filters</button>
+          <button class="step" data-flow="travellers" data-arg=""><i>3</i>Traveller details</button>
+          <button class="step" data-flow="addons"><i>4</i>Seats, meals &amp; baggage</button>
+          <button class="step" data-flow="review"><i>5</i>Review &amp; pay in Rido</button>
+          <button class="step" data-flow="confirm"><i>6</i>PNR &amp; e-ticket</button>
+        </div>
+        <div class="svc">
+          <h4>Hotels <span class="pill new">NEW</span></h4>
+          <div class="mu">Hotels &amp; homestays · via TBO</div>
+          <button class="step" data-flow="hotelSearch"><i>1</i>Search city / area &amp; dates</button>
+          <button class="step" data-flow="hotelResults"><i>2</i>Results with filters</button>
+          <button class="step" data-flow="hotelDetail"><i>3</i>Hotel &amp; room</button>
+          <button class="step" data-flow="travellers"><i>4</i>Guest details</button>
+          <button class="step" data-flow="review"><i>5</i>Review &amp; pay in Rido</button>
+          <button class="step" data-flow="confirm"><i>6</i>Booking voucher</button>
+        </div>
+        <div class="svc">
+          <h4>Intercity Bus <span class="pill new">NEW</span></h4>
+          <div class="mu">Reserved seats · via TBO</div>
+          <button class="step" data-flow="busSearch"><i>1</i>Search route &amp; date</button>
+          <button class="step" data-flow="busResults"><i>2</i>Bus list with filters</button>
+          <button class="step" data-flow="seats"><i>3</i>Seat map</button>
+          <button class="step" data-flow="travellers"><i>4</i>Boarding point &amp; passenger</button>
+          <button class="step" data-flow="review"><i>5</i>Review &amp; pay in Rido</button>
+          <button class="step" data-flow="confirm"><i>6</i>Ticket + operator PNR</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="lane">
+      <div class="lbl">3 · Connected trip (flight → hotel → airport rides)</div>
+      <div class="chain">
+        <button class="box" data-flow="confirm"><b>Flight booked</b><span>Confirmation saved to My Trips</span></button>
+        <button class="box" data-flow="hotelSearch"><b>Smart prompt</b><span>“Need a hotel near arrival?” · not asked again if “No”</span></button>
+        <button class="box" data-flow="tripDetail"><b>Ride legs created</b><span>Home → airport, airport → hotel, hotel → airport, airport → home</span></button>
+        <button class="box" data-flow="tripDetail"><b>Reminder + live fare</b><span>Timed reminder, one-tap cab comparison for that leg</span></button>
+        <button class="box" data-flow="tripDetail"><b>Flight delayed</b><span>Linked ride pickup moves automatically (3:00 → 4:00 PM example)</span></button>
+        <button class="box" data-flow="tripPlan"><b>AI trip plan</b><span>Jaipur → Mumbai: flights, hotel, transfers, cabs and a day-wise plan</span></button>
+      </div>
+    </div>
+
+    <div class="lane">
+      <div class="lbl">4 · Shared across all services</div>
+      <div class="shared">
+        <button class="box" data-flow="trips"><b>My Trips &amp; Itinerary</b><span>One timeline per journey</span></button>
+        <button class="box" data-flow="review"><b>Payments &amp; Refunds</b><span>One Rido checkout, auto-refund</span></button>
+        <button class="box" data-flow="membership"><b>Membership</b><span>Ride Pro · Pro Plus · Max</span></button>
+        <button class="box" data-flow="loyalty"><b>Loyalty Points</b><span>Earn on paid bookings, redeem at checkout</span></button>
+        <button class="box" data-flow="notifs"><b>Notifications</b><span>Journey and condition based</span></button>
+        <button class="box" data-flow="assistant"><b>AI Assistant</b><span>Chat &amp; voice booking · English, Hindi, Hinglish</span></button>
+      </div>
+    </div>
+
+    <div class="lane">
+      <div class="lbl">5 · Admin panel (new pages)</div>
+      <div class="admin-row shared">
+        <button class="box" data-admin="recon"><b>Payments &amp; refunds</b><span>Reconciliation of gateway, TBO wallet and bookings</span></button>
+        <button class="box" data-admin="plans"><b>Membership plans</b><span>Prices and benefits set without an app update</span></button>
+        <button class="box" data-admin="plans"><b>Loyalty rules</b><span>Earn rate, redemption, expiry</span></button>
+        <button class="box" data-admin="bk"><b>Flight, hotel &amp; bus bookings</b><span>Status filters, resend ticket</span></button>
+        <button class="box" data-admin="notif"><b>Notifications</b><span>Journey triggers and scheduling</span></button>
+        <button class="box" data-admin="dash"><b>AI insights</b><span>Decision support, admin decides</span></button>
+      </div>
+    </div>
+
+    <div class="lane">
+      <div class="lbl">What changed in v1.6.1 (scope update)</div>
+      <div class="panelx"><ul>
+        <li><b>Voice landing</b> takes the whole trip in one sentence (origin, destination, duration, budget and services) and fills the fields. One follow-up question is asked only when dates are essential.</li>
+        <li><b>Smart service choice</b> is based on the full requirement, not the trip type: flights, hotels, a bus alternative and cabs are activated for the journey.</li>
+        <li><b>Recommendations</b> combine flight, hotel, transfers and cabs into budget options with a one-sentence reason. Alternatives appear when direct flights exceed the admin threshold, and flexible dates are searched per date (±3 days).</li>
+        <li><b>AI trip planner</b> builds a three-day connected plan for Jaipur → Mumbai, with estimated expenditure against the budget, a booking summary, and approval for changes to confirmed bookings.</li>
+        <li><b>Honest status:</b> flights, hotels and buses are confirmed only after the provider returns confirmation. Cabs are never shown as booked without it.</li>
+      </ul></div>
+    </div>
+
+    <div class="lane">
+      <div class="lbl">Rules that shape every screen</div>
+      <div class="two-l">
+        <div class="panelx">
+          <ul>
+            <li><b>Live prices only.</b> Every fare comes from TBO or the cab connector, and is re-checked before payment.</li>
+            <li><b>AI never invents prices.</b> AI understands, plans and explains. Estimates are labelled as estimates.</li>
+            <li><b>Cabs are never “booked” by Rido.</b> The ride is booked in Uber, Ola or Rapido. Rido confirms only when the user says so.</li>
+          </ul>
+        </div>
+        <div class="panelx">
+          <ul>
+            <li><b>One checkout.</b> The same Rido payment gateway serves flights, hotels, buses and memberships.</li>
+            <li><b>No hidden fees.</b> The price shown is the price paid. Rido aims for no separate convenience fee.</li>
+            <li><b>Helpful, not pushy.</b> Reminders only when relevant to the trip, with one-tap actions and opt-out.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="lane">
+      <div class="lbl">What changed from the earlier POC</div>
+      <div class="panelx">
+        <table>
+          <tr><th style="width:24%">Area</th><th style="width:38%">Earlier (cab comparison app)</th><th>New (v1.6 connected travel app)</th></tr>
+          <tr><td>Entry</td><td>Open to cab search</td><td>Voice (mic) landing screen, with “Type instead” as fallback</td></tr>
+          <tr><td>Home</td><td>Cabs only</td><td>Four services (Cabs, Flights, Hotels, Intercity Bus), recent searches</td></tr>
+          <tr><td>Booking</td><td>Redirect to Uber, Ola or Rapido</td><td>Cabs unchanged; flights, hotels and buses booked and paid inside Rido</td></tr>
+          <tr><td>Trips</td><td>Activity list of cab redirects</td><td>My Trips timeline with linked ride legs that adjust to flight changes</td></tr>
+          <tr><td>Money</td><td>No payments in Rido</td><td>One Rido checkout, automatic refunds, reconciliation in admin</td></tr>
+          <tr><td>Rewards</td><td>None</td><td>Membership tiers and Rido Points</td></tr>
+          <tr><td>Assistance</td><td>None</td><td>AI chat and voice booking, budget top three, day-wise trip planner</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <p class="sample">All prices, names, PNRs and bookings in this prototype are sample data. Membership prices are “TBC” until Rido confirms the commercial review. Hindi and Hinglish replies are scripted in this POC; the live AI layer is not connected.</p>
+  </div>
+</section>
+
+<!-- ============ TAB 2: CUSTOMER APP ============ -->
+<section id="tab-app" class="tab">
+  <div class="stage">
+    <div class="phone">
+      <div class="status"><span>9:41</span><span>5G ▮▮▮ 87%</span></div>
+      <div id="app"></div>
+      <nav id="bnav"></nav>
+    </div>
+    <aside class="notes" id="notes"></aside>
+  </div>
+</section>
+
+<!-- ============ TAB 3: ADMIN ============ -->
+<section id="tab-admin" class="tab">
+  <div id="adm"></div>
+</section>
+
+</main>
+
+<div id="toast" class="toast"></div>
+
+<script>
+/* ================= DATA (sample) ================= */
+const R = n => '₹' + Number(n).toLocaleString('en-IN');
+const $ = s => document.querySelector(s);
+const MIC = '<svg width="54" height="54" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 19v3"/></svg>';
+const MIC_SM = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 19v3"/></svg>';
+
+const CAB = [
+  {p:'Uber',  ride:'Uber Go',     lo:182, hi:260, eta:4},
+  {p:'Ola',   ride:'Ola Mini',    lo:200, hi:250, eta:6},
+  {p:'Rapido',ride:'Rapido Auto', lo:190, hi:240, eta:3}
+];
+
+const FL = [
+  {id:'f1', route:'Delhi → Jaipur', air:'IndiGo',    no:'6E 2104', dep:'06:00', arr:'07:05', dur:'1h 05m', stops:'Non-stop', price:3850, tag:'Fastest'},
+  {id:'f2', route:'Delhi → Jaipur', air:'Air India', no:'AI 439',  dep:'09:30', arr:'10:40', dur:'1h 10m', stops:'Non-stop', price:4920, tag:''},
+  {id:'f3', route:'Delhi → Jaipur', air:'Akasa Air', no:'QP 1101', dep:'18:10', arr:'19:20', dur:'1h 10m', stops:'Non-stop', price:4200, tag:'Most convenient'},
+  {id:'f4', route:'Delhi → Jaipur', air:'IndiGo',    no:'6E 512',  dep:'13:15', arr:'15:20', dur:'2h 05m', stops:'1 stop',   price:3300, tag:'Lowest cost'}
+];
+const CF = [
+  {id:'cf1', route:'Mumbai → Hyderabad', air:'IndiGo',    no:'6E 5204', dep:'08:00', arr:'09:35', dur:'1h 35m', stops:'Non-stop', price:4100, tag:''},
+  {id:'cf2', route:'Mumbai → Hyderabad', air:'Air India', no:'AI 655',  dep:'17:30', arr:'19:05', dur:'1h 35m', stops:'Non-stop', price:4650, tag:''}
+];
+const HO = [
+  {id:'h1', name:'Sample Heritage Haveli', area:'Near Jaipur railway station', stars:4, rating:4.4, price:3200, amen:'Breakfast · Pool · Free cancel till 48 hrs', tag:'Closest above budget'},
+  {id:'h2', name:'Sample Boutique Stay',   area:'5 min walk from the station', stars:3, rating:4.6, price:2750, amen:'Breakfast · Wi-Fi · Free cancel',          tag:'Highest rated'},
+  {id:'h3', name:'Sample City Inn',        area:'Station side',                stars:3, rating:4.1, price:2400, amen:'Wi-Fi · AC · Pay at hotel',                tag:'Lowest cost'}
+];
+const BU = [
+  {id:'b1', route:'Delhi → Jaipur', op:'Sample Travels',  kind:'AC Sleeper',    dep:'22:00', arr:'05:30', price:1250, tag:''},
+  {id:'b2', route:'Delhi → Jaipur', op:'Sample Express',  kind:'AC Seater',     dep:'07:00', arr:'12:30', price:780,  tag:'Cheapest AC'},
+  {id:'b3', route:'Delhi → Jaipur', op:'Sample Roadways', kind:'Non-AC Seater', dep:'13:15', arr:'19:00', price:520,  tag:''},
+  {id:'b4', route:'Delhi → Jaipur', op:'Sample Coach',    kind:'AC Seater',     dep:'06:30', arr:'11:45', price:820,  tag:'Morning'}
+];
+const ITEMS = {};
+const reg = (type, arr) => arr.forEach(x => ITEMS[x.id] = Object.assign({type}, x));
+reg('flight', FL); reg('flight', CF); reg('hotel', HO); reg('bus', BU);
+
+const MEM = {
+  pro:{n:'Ride Pro',      tag:'',              b:['Benefits applied automatically at checkout','Bonus Rido Points on paid bookings','Member badge in the app']},
+  plus:{n:'Ride Pro Plus', tag:'Popular',       b:['Everything in Ride Pro','Premium fare comparison','Extra points on bookings']},
+  max:{n:'Ride Max',      tag:'Most benefits', b:['Everything in Ride Pro Plus','Priority support','Highest points rate']}
+};
+const ADDON = {seat:{n:'Seat selection', p:250}, meal:{n:'Veg meal', p:300}, bag:{n:'Extra baggage 15 kg', p:900}};
+const DAYS = [
+  {t:'Heritage start', slots:[['Morning','Amber Fort','2 hrs · 40 min by cab'],['Lunch','Local thali lunch','1 hr'],['Afternoon','Jal Mahal & Johari Bazaar','2 hrs']], spend:3200},
+  {t:'Old city & food', slots:[['Morning','City Palace','1.5 hrs'],['Afternoon','Hawa Mahal','1 hr'],['Evening','Food walk','1.5 hrs']], spend:3800,
+     alt:{slots:[['Morning','City Palace','1.5 hrs'],['Afternoon','Lunch at a heritage café','1 hr'],['Evening','Food walk (slower pace)','2 hrs']], spend:3300}},
+  {t:'Views & shopping', slots:[['Morning','Nahargarh Fort (sunrise view)','2 hrs'],['Afternoon','Shopping at the bazaar','2 hrs'],['Evening','Return to hotel','']], spend:2900}
+];
+const INSIGHTS = [
+  {t:'Payment failures doubled yesterday, mostly on UPI.', d:'Failures on UPI rose from 1 to 3 (sample).', a:'Check the payment gateway for UPI.'},
+  {t:'Jaipur searches are high, but bookings are low.', d:'Most users who searched flights left at the traveller-details step.', a:'Simplify the traveller step and test saved-traveller pre-fill.'},
+  {t:'Most users link only one cab provider.', d:'Linking more providers helps fares and comparison.', a:'Promote linking the other providers with the trust message.'}
+];
+const ADMB = [
+  {id:'RDO-F-1042', type:'Flight', who:'Priya Sharma', route:'DEL → JAI', amt:8624, st:'Confirmed'},
+  {id:'RDO-H-0931', type:'Hotel',  who:'Rahul Mehta',  route:'Jaipur · 2 nights', amt:6400, st:'Pending'},
+  {id:'RDO-B-0877', type:'Bus',    who:'Anita Rao',    route:'Delhi → Jaipur', amt:1560, st:'Failed'},
+  {id:'RDO-F-1038', type:'Flight', who:'Vikram Singh', route:'BOM → HYD', amt:9100, st:'Refund pending'},
+  {id:'RDO-H-0925', type:'Hotel',  who:'Neha Gupta',   route:'Goa · 3 nights', amt:12400, st:'Cancelled'},
+  {id:'RDO-B-0870', type:'Bus',    who:'Karan Joshi',  route:'Jaipur → Agra', amt:980, st:'Confirmed'},
+  {id:'RDO-F-1031', type:'Flight', who:'Sana Khan',    route:'DEL → BLR', amt:6750, st:'Pending'}
+];
+const ICON = {ride:'🚕', delay:'✈️', hotel:'🏨', pay:'💳', loyal:'🎁', ai:'✨', reeng:'🔔', mem:'⭐', plan:'🗺️'};
+const ROOT_OF = {home:'home', trips:'trips', tripDetail:'trips', plannerAI:'trips', rewards:'rewards', membership:'rewards', loyalty:'rewards', profile:'profile', notifs:'home', assistant:'home'};
+const ROOTS = ['voice','home','trips','rewards','profile'];
+
+/* ================= STATE ================= */
+const S = {
+  tab:'flow', stack:[{s:'voice'}], listen:false, heard:null, vi:0, t:null,
+  cab:{from:'Current location (GPS)', to:'Malviya Nagar, Jaipur'}, sort:'cheap', linked:false,
+  fsort:'price', flex:false, budget:4000, hbudget:3000,
+  bk:null, lastBk:null, pay:null, usePts:false, points:1250,
+  member:null, mPlan:'pro', mBill:'monthly',
+  delay:false, planGen:false, relax:false,
+  interests:{Heritage:true, Food:true, Nature:false, Shopping:false}, pace:'Balanced',
+  pax:['self','rahul'], seats:[], addons:{}, payM:'UPI',
+  noHotel:false, noRide:false, famAdded:false, lang:'English',
+  travellers:[{id:'self',name:'Priya Sharma',rel:'Self',dob:'12 Mar 1992'},{id:'rahul',name:'Rahul Sharma',rel:'Spouse',dob:'28 Jan 1990'}],
+  bookings:[], cabLog:[{p:'Uber', when:'Yesterday, 6:40 PM', st:'Taken', sv:40}],
+  notifs:[
+    {k:'ai',    t:'Cheapest cab right now (estimate)', sub:'Uber Go has the lowest starting fare to Malviya Nagar: ₹182.', time:'9:10 AM', read:false},
+    {k:'hotel', t:'Hotel check-in details sent', sub:'Automated email sent to Sample Heritage Haveli with your arrival time.', time:'Yesterday', read:true},
+    {k:'loyal', t:'Rido Points expire soon', sub:'300 points expire on 31 Dec 2026 (sample). Use them at checkout.', time:'Mon', read:true},
+    {k:'reeng', t:'Still planning your Jaipur trip?', sub:'You compared cabs but did not book. Compare again?', time:'Sun', read:true}
+  ],
+  chat:[{f:'ai', t:'Hi Priya! I can search or book a cab, flight, hotel or bus, answer booking questions, or plan a trip. Type or tap the mic. English, Hindi and Hinglish work.'}],
+  adm:'dash', aF:'All', insight:{}, recon:{}, nOn:{r:true, p:true, o:false}
+};
+
+/* ===== v1.6.1: Jaipur → Mumbai connected trip (sample data) ===== */
+const TRIP_FL = [
+  {id:'tf1', air:'IndiGo',    no:'6E 9134', dep:'10:20', arr:'14:30', dur:'4h 10m', mins:250, stops:'1 stop',    out:3450, ret:3600, rd:'16:40', ra:'20:50', tag:'Lowest cost',     why:'it has the lowest fare'},
+  {id:'tf2', air:'IndiGo',    no:'6E 2104', dep:'06:10', arr:'08:20', dur:'2h 10m', mins:130, stops:'Non-stop',  out:3850, ret:4000, rd:'09:40', ra:'11:50', tag:'Fastest journey', why:'it has the shortest flight time'},
+  {id:'tf3', air:'Akasa Air', no:'QP 1103', dep:'19:00', arr:'21:10', dur:'2h 10m', mins:130, stops:'Non-stop',  out:3450, ret:3650, rd:'20:30', ra:'22:40', tag:'Most convenient', why:'it is a non-stop flight at a low fare'},
+  {id:'tf4', air:'Air India', no:'AI 668',  dep:'13:45', arr:'15:55', dur:'2h 10m', mins:130, stops:'Non-stop',  out:5300, ret:5400, rd:'14:20', ra:'16:30', tag:'',                why:'it is a non-stop afternoon flight'}
+];
+const TRIP_HO = [
+  {id:'th1', name:'Sample City Inn',      area:'Andheri · 15 min from airport',    rating:4.1, price:2400, why:'closest to the airport'},
+  {id:'th2', name:'Sample Boutique Stay', area:'Colaba · walk to Gateway of India', rating:4.6, price:2600, why:'the highest rated'},
+  {id:'th3', name:'Sample Harbour Hotel', area:'Colaba · sea-facing rooms',        rating:4.4, price:3000, why:'it has sea views'}
+];
+const TRIP_TRANSFER = {total:2500, legs:[['Home → Jaipur airport',450],['Mumbai airport → hotel',800],['Hotel → Mumbai airport',800],['Jaipur airport → home',450]]};
+const TRIP_LOCAL_BASE = 1800;
+const TRIP_SIGHTS = [
+  {id:'s1', n:'Gateway of India',            when:'Day 2 · morning',       h:'1.5 hrs', cost:350},
+  {id:'s2', n:'Marine Drive',                when:'Day 2 · evening',       h:'1.5 hrs', cost:300},
+  {id:'s3', n:'Elephanta Caves (ferry)',     when:'Optional · half day',   h:'4 hrs',   cost:900},
+  {id:'s4', n:'Juhu Beach',                  when:'Optional · evening',    h:'1.5 hrs', cost:250},
+  {id:'s5', n:'Chhatrapati Shivaji Terminus',when:'Optional · morning',    h:'1 hr',    cost:200}
+];
+const TRIP_BUS = {op:'Sample Overnight Coach', kind:'AC Sleeper', dur:'about 18 hrs (sample)', price:1900};
+const TRIP_FLEX = [['7 Dec',25150],['8 Dec',24880],['9 Dec',24610],['10 Dec',24426],['11 Dec',24590],['12 Dec',24910],['13 Dec',25340]];
+function toMin(s){const [h,m]=s.split(':').map(Number);return h*60+m;}
+function defaultPlan(){
+  return {from:'Jaipur', to:'Mumbai', days:3, nights:2, budget:25000, pax:2,
+    depart:'10 Dec', ret:'12 Dec', flex:false, flightThreshold:7500,
+    svc:{flight:true, hotel:true, transfer:true, local:true, bus:false},
+    prio:['cost','time','conv'], mode:'flight', flight:'tf1', hotel:'th1',
+    sights:['s1','s2'], booked:false, pendingApproval:null, open:null,
+    st:{out:'Not booked', ret:'Not booked', hotel:'Not booked', transfer:'Estimate', local:'Estimate'}};
+}
+function sightsCost(p){return TRIP_SIGHTS.filter(s=>p.sights.includes(s.id)).reduce((a,s)=>a+s.cost,0);}
+function totalsOf(p, mode, f, h){
+  const flights  = mode==='flight' ? (f.out+f.ret)*p.pax : 0;
+  const bus      = mode==='bus' ? TRIP_BUS.price*2*p.pax : 0;
+  const hotel    = h ? Math.round(h.price*p.nights*1.12) : 0;
+  const transfer = p.svc.transfer ? TRIP_TRANSFER.total : 0;
+  const local    = p.svc.local ? TRIP_LOCAL_BASE + sightsCost(p) : 0;
+  return {flights, bus, hotel, transfer, local, total: flights+bus+hotel+transfer+local};
+}
+function mkCombo(p, mode, f, h){
+  const t = totalsOf(p, mode, f, h);
+  return Object.assign({mode, f, h, key: mode+'|'+(f?f.id:'-')+'|'+(h?h.id:'-')}, t);
+}
+function comboList(p){
+  const hs = p.svc.hotel ? TRIP_HO : [null];
+  const out = [];
+  if(p.svc.flight) TRIP_FL.forEach(f=>hs.forEach(h=>out.push(mkCombo(p,'flight',f,h))));
+  if(p.svc.bus) hs.forEach(h=>out.push(mkCombo(p,'bus',null,h)));
+  if(!p.svc.flight && !p.svc.bus) hs.forEach(h=>out.push(mkCombo(p,'none',null,h)));
+  return out;
+}
+function convScore(c){ return (c.f && c.f.stops==='Non-stop' ? 2 : 0) + (c.h ? c.h.rating : 0) - (c.mode==='bus' ? 3 : 0); }
+function rankCombos(p){
+  const all = comboList(p);
+  const within = all.filter(c=>c.total<=p.budget);
+  const cmp = (a,b)=>{
+    for(const k of p.prio){
+      const d = k==='cost' ? a.total-b.total
+              : k==='time' ? (a.f?a.f.mins:999)-(b.f?b.f.mins:999)
+              : convScore(b)-convScore(a);
+      if(d) return d;
+    }
+    return a.total-b.total;
+  };
+  within.sort(cmp);
+  const above = all.filter(c=>c.total>p.budget).sort((a,b)=>a.total-b.total);
+  let top = within.slice(0,3);
+  if(top.length<3) top = top.concat(above.slice(0,3-top.length));
+  return {top, within:within.length, all:all.length};
+}
+function reasonOf(c){
+  if(c.mode==='bus') return 'Lowest-cost option overall, but it is an overnight road trip of about 18 hours (sample) and depends on TBO bus availability.';
+  if(c.mode==='none') return 'Hotel and transfers only, because no flight is selected.';
+  const hw = c.h ? ' and the hotel is '+c.h.why : '';
+  return 'Chosen because '+c.f.why+hw+'.';
+}
+function currentCombo(){
+  const p=S.plan;
+  const mode = (p.mode==='flight' && p.svc.flight) ? 'flight' : ((p.mode==='bus' && p.svc.bus) ? 'bus' : 'none');
+  const f = mode==='flight' ? TRIP_FL.find(x=>x.id===p.flight) : null;
+  const h = p.svc.hotel ? TRIP_HO.find(x=>x.id===p.hotel) : null;
+  return mkCombo(p, mode, f, h);
+}
+function dayOf(p,off){ return (parseInt(p.depart,10)+off)+' Dec'; }
+function radio(on,title,sub,right,act,arg){ return `<button class="room ${on?'on':''}" data-act="${act}" data-arg="${arg}" style="margin-top:8px"><span class="radio"></span><div class="sp"><b>${title}</b><div class="mu">${sub}</div></div><div class="tr"><b>${right}</b></div></button>`; }
+function statusPill(s){ const c = /Confirmed/.test(s)?'ok' : /Pending/.test(s)?'wa' : /Awaiting/.test(s)?'in' : 'gr'; return `<span class="pill ${c}">${s}</span>`; }
+function requestChange(label, apply){
+  if(!S.plan.booked){ apply(); toast('Updated. Totals recalculated.'); }
+  else { S.plan.pendingApproval={label, apply}; toast('This trip is booked. Approval is needed.'); }
+  render();
+}
+Object.assign(S, {plan: defaultPlan(), vHeard:false, vDates:null, vMode:'trip'});
+
+/* ================= HELPERS ================= */
+function tm(m){m=((m%1440)+1440)%1440;let h=Math.floor(m/60),mi=m%60,ap=h>=12?'PM':'AM';h=h%12||12;return h+':'+String(mi).padStart(2,'0')+' '+ap;}
+const chip = (l,on,act,arg) => `<button class="chip ${on?'on':''}" data-act="${act||'noop'}" data-arg="${arg||''}">${l}</button>`;
+function H(title, right=''){return `<div class="hdr"><button class="ib" data-back aria-label="Back">←</button><h2>${title}</h2><span class="sp"></span>${right}</div>`;}
+function tli(icon,title,sub,pill,pc,action=''){return `<div class="tli"><div class="tl-ic">${icon}</div><div class="card tl-c"><div class="row"><b>${title}</b><span class="sp"></span><span class="pill ${pc}">${pill}</span></div><div class="mu" style="margin-top:4px">${sub}</div>${action?`<div style="margin-top:10px">${action}</div>`:''}</div></div>`;}
+function unread(){return S.notifs.filter(n=>!n.read).length;}
+function cur(){return S.stack[S.stack.length-1];}
+function sortF(list){
+  const a=[...list];
+  if(S.fsort==='time') a.sort((x,y)=>x.dep.localeCompare(y.dep));
+  else if(S.fsort==='conv') a.sort((x,y)=>((x.stops==='Non-stop'?0:1)-(y.stops==='Non-stop'?0:1)) || x.dep.localeCompare(y.dep));
+  else a.sort((x,y)=>x.price-y.price);
+  return a;
+}
+function refOf(t){const n=1000+Math.floor(Math.random()*8999);return t==='flight'?'PNR K7Q'+n:(t==='hotel'?'Voucher RDO-H-'+n:'Operator PNR BS'+n);}
+function titleOf(b){
+  if(b.type==='trip') return 'Jaipur → Mumbai trip (3 days)';
+  if(b.type==='flight') return `${b.item.air} ${b.item.no} · ${b.item.route}`;
+  if(b.type==='hotel')  return `${b.item.name} · 2 nights`;
+  if(b.type==='bus')    return `${b.item.op} · ${b.item.kind} · ${b.item.route}`;
+  return b.type;
+}
+
+function priceOf(bk){
+  if(!bk) return {lines:[], total:0, earn:0, discount:0};
+  let base=0, taxes=0, addons=0; const lines=[];
+  if(bk.type==='flight'){
+    const n=S.pax.length; base=bk.item.price*n; taxes=Math.round(base*0.12);
+    lines.push([`Fare × ${n} adult${n>1?'s':''}`, base]);
+    lines.push(['Taxes & fees (sample 12%)', taxes]);
+    Object.keys(S.addons).forEach(k=>{ if(S.addons[k]){ const a=ADDON[k]; addons+=a.p*n; lines.push([`${a.n} × ${n}`, a.p*n]); } });
+  } else if(bk.type==='hotel'){
+    const rp = bk.room==='std' ? bk.item.price-300 : bk.item.price;
+    base=rp*2; taxes=Math.round(base*0.12);
+    lines.push([`Room × 2 nights (${bk.room==='std'?'Standard':'Deluxe'})`, base]);
+    lines.push(['Taxes (sample 12%)', taxes]);
+  } else {
+    const n=Math.max(1,(bk.seats||[]).length); base=bk.item.price*n; taxes=Math.round(base*0.05);
+    lines.push([`Ticket × ${n} seat${n>1?'s':''}`, base]);
+    lines.push(['GST (sample 5%)', taxes]);
+  }
+  const sub=base+taxes+addons;
+  const discount = S.usePts ? Math.min(S.points, Math.round(sub*0.1)) : 0;
+  if(discount) lines.push(['Rido Points applied (max 10%, sample)', -discount]);
+  lines.push(['Rido convenience fee', 0]);
+  const total = sub-discount;
+  return {lines, total, earn:Math.floor(total/100), discount};
+}
+
+/* ================= NAVIGATION ================= */
+function render(){
+  const c=cur(); const fn=SCR[c.s]||SCR.home;
+  $('#app').innerHTML = fn(c.arg);
+  const rootKey = ROOT_OF[S.stack[0].s] || 'home';
+  $('#bnav').innerHTML = [['home','🏠','Home'],['trips','🧳','Trips'],['rewards','🎁','Rewards'],['profile','👤','Profile']]
+    .map(([k,i,l])=>`<button class="nb ${rootKey===k?'on':''}" data-root="${k}"><span class="ic">${i}</span>${l}</button>`).join('');
+  $('#bnav').style.display = (S.stack[0].s==='voice' && S.stack.length===1) ? 'none' : 'flex';
+  $('#notes').innerHTML = `<h4>What this screen shows</h4><p>${NOTE[c.s]||'Customer app preview.'}</p><div class="meta">Clickable prototype with sample data. Use the bottom bar or in-screen buttons. The flow map tab links straight to any screen.</div>`;
+  $('#app').scrollTop = 0;
+}
+function go(s,arg){ S.stack.push({s,arg}); render(); }
+function back(){ if(S.stack.length>1) S.stack.pop(); render(); }
+function root(s){ S.stack=[{s}]; render(); }
+function swap(s){ S.stack[S.stack.length-1]={s}; render(); }
+function flowGo(s,arg){
+  tab('app');
+  S.stack = ROOTS.includes(s) ? [{s,arg}] : [{s:'home'},{s,arg}];
+  render();
+}
+function tab(t){
+  S.tab=t;
+  document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('on', b.dataset.tab===t));
+  document.querySelectorAll('.tab').forEach(s=>s.classList.toggle('on', s.id==='tab-'+t));
+  if(t==='app') render();
+  if(t==='admin') renderAdmin();
+  window.scrollTo(0,0);
+}
+function toast(m){
+  const t=$('#toast'); t.textContent=m; t.classList.add('show');
+  clearTimeout(toast.h); toast.h=setTimeout(()=>t.classList.remove('show'),1900);
+}
+
+/* ================= SCREENS ================= */
+const SCR = {};
+
+SCR.voice = () => `
+<div class="vwrap">
+  <div class="row" style="padding:6px 2px"><span class="logo" style="font-size:16px">RIDO</span><span class="sp"></span><button class="btn sm g" data-root="home">Skip</button></div>
+  <div class="vhead">
+    <h1>Where do you want to go?</h1>
+    <p class="mu">Say your whole trip in English, Hindi or Hinglish. Rido fills in the fields for you.</p>
+  </div>
+  <button class="micbig ${S.listen?'listen':''}" data-act="mic" aria-label="Tap to speak">${MIC}</button>
+  <p class="mu" style="text-align:center;margin-top:12px">${S.listen?'Listening…':(S.vHeard?'Got it. Check the filled fields.':'Tap and speak, e.g. “Jaipur to Mumbai for 3 days”')}</p>
+  ${S.vHeard ? voiceCard() : ''}
+  <div style="margin-top:auto;padding-top:14px">
+    <div class="mu" style="margin-bottom:8px">Try saying</div>
+    <div class="chips">
+      <button class="chip" data-act="say" data-arg="0">“Jaipur to Mumbai, 3 days”</button>
+      <button class="chip" data-act="say" data-arg="1">“I need to go to Malviya Nagar”</button>
+    </div>
+    <button class="btn g" data-go="cabSearch">Type instead</button>
+  </div>
+</div>`;
+
+function voiceCard(){
+  if(S.vMode==='cab') return `<div class="card">
+    <div class="mu">You said</div>
+    <div style="font-weight:700;margin:2px 0 10px">“I need to go to Malviya Nagar”</div>
+    <div class="kvl"><span>Pickup</span><b>Current location (GPS)</b></div>
+    <div class="kvl"><span>Destination</span><b>Malviya Nagar, Jaipur</b></div>
+    <div class="kvl"><span>Service</span><b>Cabs (city trip)</b></div>
+    <button class="btn" data-act="voiceGo" data-arg="cabResults|Malviya Nagar, Jaipur">See cab options</button></div>`;
+  const p=S.plan;
+  return `<div class="card">
+    <div class="mu">You said</div>
+    <div style="font-size:13px;line-height:1.5;margin:4px 0 12px;color:#e3e3ea">“I want to travel from Jaipur to Mumbai for 3 days with a budget of INR 25,000. I need flight tickets, hotel accommodation, airport transfers and local transportation.”</div>
+    <div class="mu" style="margin-bottom:6px">Filled from your request. You can correct any field.</div>
+    <div class="two">
+      <div class="field" style="margin-bottom:8px"><label>From</label><input value="Jaipur"></div>
+      <div class="field" style="margin-bottom:8px"><label>To</label><input value="Mumbai"></div>
+    </div>
+    <div class="two">
+      <div class="field" style="margin-bottom:8px"><label>Duration</label><input value="3 days"></div>
+      <div class="field" style="margin-bottom:8px"><label>Budget</label><input value="₹25,000"></div>
+    </div>
+    <div class="mu" style="margin-bottom:6px">Services the AI activates</div>
+    <div class="chips">${chip('Flights',p.svc.flight,'svc','flight')}${chip('Hotels',p.svc.hotel,'svc','hotel')}${chip('Airport transfers',p.svc.transfer,'svc','transfer')}${chip('Local cabs',p.svc.local,'svc','local')}${chip('Bus option',p.svc.bus,'svc','bus')}</div>
+    ${S.vDates ? '' : `<div class="h3">One question</div>
+      <div class="mu">When do you travel? Dates are needed to search fares.</div>
+      <div class="chips" style="margin-top:6px">${chip('10 – 12 Dec',false,'vDate','10')}${chip('7 – 9 Dec',false,'vDate','7')}${chip('Flexible ±3 days',false,'vDate','flex')}</div>`}
+    <div class="mu" style="margin-top:8px">Passengers: 2 adults. You can change this on the next screen.</div>
+    ${S.vDates ? `<button class="btn" data-act="vBuild">Build my trip plan</button>` : `<button class="btn g" disabled>Choose dates to continue</button>`}
+  </div>`;
+}
+
+SCR.tripPlan = () => {
+  const p=S.plan; const R2=rankCombos(p);
+  const alt = p.svc.flight ? TRIP_FL.filter(f=>(f.out+f.ret)>p.flightThreshold) : [];
+  const prioTxt = p.prio.map(k=>({cost:'Cost',time:'Time',conv:'Convenience'})[k]).join(' › ');
+  return `${H('Jaipur → Mumbai')}
+  <div class="pad">
+    <div class="card" style="padding:12px"><div class="row"><div><b>${p.depart} – ${p.ret} · ${p.days} days</b><div class="mu">${p.pax} adults · budget ${R(p.budget)} · estimates are labelled</div></div><span class="sp"></span><span class="pill ${p.flex?'in':'gr'}">${p.flex?'±3 days':'Fixed dates'}</span></div></div>
+    <div class="h3">Services in this plan</div>
+    <div class="chips">${chip('Flights',p.svc.flight,'svc','flight')}${chip('Hotels',p.svc.hotel,'svc','hotel')}${chip('Airport transfers',p.svc.transfer,'svc','transfer')}${chip('Local cabs',p.svc.local,'svc','local')}${chip('Bus option',p.svc.bus,'svc','bus')}</div>
+    <div class="h3">Rank by <span class="mu">${prioTxt}</span></div>
+    <div class="chips">${chip('Cost first',p.prio[0]==='cost','prio','cost')}${chip('Time first',p.prio[0]==='time','prio','time')}${chip('Convenience first',p.prio[0]==='conv','prio','conv')}</div>
+    ${alt.length ? altBanner(alt.length) : ''}
+    <div class="h3">Top options for your ${R(p.budget)} budget <span class="mu">${R2.within} of ${R2.all} fit</span></div>
+    ${R2.top.length ? R2.top.map((c,i)=>comboCard(c,i)).join('') : '<div class="card mu">No option is available with the current services.</div>'}
+    <div class="h3">Flexible dates (±3 days)</div>
+    <div class="dates">${TRIP_FLEX.map(([d,v],i)=>`<button class="${d===p.depart?'on':''}" data-act="flexDate" data-arg="${i}"><b>${d}</b><span class="mu">from</span><div class="p">${R(v)}</div></button>`).join('')}</div>
+    <div class="mu">Each date is a separate supplier search, so a wider window means more searches and higher API charges. Lowest sample estimate per date.</div>
+  </div>`;
+};
+
+function altBanner(n){
+  return `<div class="topbox"><div class="lab">Direct flights above ${R(S.plan.flightThreshold)} per adult return (admin threshold)</div>
+    <div class="mu" style="color:#eadfd7">${n} of ${TRIP_FL.length} flights are above it. Rido also shows connecting itineraries, other timings, nearby airports where practical, and an intercity bus option.</div>
+    <div class="row" style="margin-top:8px"><button class="btn sm" data-act="alt" data-arg="bus">Add bus option</button><span class="mu">Connections and other timings are listed below.</span></div></div>`;
+}
+
+function comboCard(c,i){
+  const p=S.plan; const over=c.total>p.budget;
+  const title = c.mode==='flight' ? `${c.f.air} ${c.f.no}` : c.mode==='bus' ? TRIP_BUS.op : 'No flights';
+  const sub   = c.mode==='flight' ? `${tm(toMin(c.f.dep))} → ${tm(toMin(c.f.arr))} · ${c.f.stops}` : c.mode==='bus' ? `${TRIP_BUS.kind} · ${TRIP_BUS.dur}` : 'Hotel and transfers only';
+  const tag   = (c.f && c.f.tag) ? c.f.tag : (c.mode==='bus' ? 'Lowest cost' : '');
+  return `<div class="card">
+    <div class="row"><span class="pill ${over?'wa':'ok'}">${over ? R(c.total-p.budget)+' over budget' : 'Within budget'}</span>${tag?`<span class="pill or">${tag}</span>`:''}<span class="sp"></span><span class="mu">Option ${i+1}</span></div>
+    <div style="margin-top:8px"><b>${title}</b> <span class="mu">${sub}</span></div>
+    <div class="mu">${c.h ? c.h.name+' · '+p.nights+' nights' : 'No hotel'} · transfers and local cabs (estimate)</div>
+    <div class="row" style="margin-top:8px"><div><div class="mu">Estimated total</div><b style="font-size:18px">${R(c.total)}</b></div><span class="sp"></span><button class="btn sm" data-act="combo" data-arg="${c.key}">Select</button></div>
+    <div class="mu" style="margin-top:8px">Why: ${reasonOf(c)}</div>
+  </div>`;
+}
+
+SCR.tripItin = () => {
+  const p=S.plan, c=currentCombo(), left=p.budget-c.total, over=left<0;
+  const pct=Math.min(100,Math.round(c.total/p.budget*100));
+  const pend=p.pendingApproval; const f=c.f, h=c.h;
+  const route = TRIP_SIGHTS.filter(s=>p.sights.includes(s.id)).map(s=>s.n).join(' → ') || 'No sightseeing selected';
+  const lines = [['Flights',c.flights],['Bus (both ways)',c.bus],['Hotel · '+p.nights+' nights',c.hotel],['Airport transfers (estimate)',c.transfer],['Local cabs and sightseeing (estimate)',c.local]].filter(x=>x[1]>0);
+  return `${H('Your trip plan')}
+  ${pend ? `<div class="card warn" style="margin:12px 16px 0"><b>Approval needed</b><div class="mu" style="margin-top:4px">${pend.label}. This trip has confirmed bookings, so the change goes to the supplier under their modification and cancellation rules. Any fee is shown before you approve.</div><div class="row" style="margin-top:8px"><button class="btn sm" data-act="approve">Approve change</button><button class="btn sm g" data-act="cancelApproval">Keep current</button></div></div>` : ''}
+  <div class="pad">
+    <div class="card">
+      <div class="row"><div><b>Jaipur → Mumbai · ${p.depart} – ${p.ret}</b><div class="mu">${p.pax} adults · 3 days · budget ${R(p.budget)}</div></div><span class="sp"></span><span class="pill ${p.booked?'ok':'gr'}">${p.booked?'Booked':'Plan'}</span></div>
+      <div class="bar"><i style="width:${pct}%;${over?'background:var(--wa)':''}"></i></div>
+      <div class="kv"><span>Estimated total</span><b>${R(c.total)}</b></div>
+      <div class="mu">${over ? R(-left)+' over budget. Swap the hotel or switch off a service to reduce the total.' : R(left)+' left in your budget.'}</div>
+      <div class="mu" style="margin-top:6px">Flight and hotel prices come from TBO (sample). Transfers and local cabs are estimates.</div>
+    </div>
+    <div class="h3">Expenditure breakdown</div>
+    <div class="card">
+      ${lines.map(([a,b])=>`<div class="kv"><span>${a}</span><b>${R(b)}</b></div>`).join('') || '<div class="mu">Nothing selected</div>'}
+      <div class="kv tot"><span>Total (estimate)</span><b>${R(c.total)}</b></div>
+    </div>
+    <div class="h3">Day 1 · ${p.depart} · Jaipur → Mumbai</div>
+    <div class="card">
+      ${c.mode==='flight' ? `<div class="slot"><span class="mu">Flight</span><div><b>${f.air} ${f.no}</b><div class="mu">${tm(toMin(f.dep))} → ${tm(toMin(f.arr))} · ${f.stops}</div></div></div>` : c.mode==='bus' ? `<div class="slot"><span class="mu">Bus</span><div><b>${TRIP_BUS.op}</b><div class="mu">${TRIP_BUS.dur}</div></div></div>` : ''}
+      <div class="slot"><span class="mu">Morning</span><div><b>Cab from home to Jaipur airport</b><div class="mu">Estimate ₹450</div></div></div>
+      <div class="slot"><span class="mu">Arrival</span><div><b>Cab pickup at Mumbai airport</b><div class="mu">Estimate ₹800</div></div></div>
+      <div class="slot"><span class="mu">Afternoon</span><div><b>Transfer to ${h?h.name:'hotel'}</b><div class="mu">Check-in and itinerary details</div></div></div>
+      <div class="slot"><span class="mu">Evening</span><div><b>Nearby suggestions</b><div class="mu">Haji Ali and Bandra-Worli Sea Link (travel times are estimates)</div></div></div>
+      ${c.mode==='flight' ? `<button class="lnk" data-act="toggleOpen" data-arg="fl">${p.open==='fl'?'Hide flight options':'Change flight'}</button>` : ''}
+      ${(p.open==='fl' && c.mode==='flight') ? TRIP_FL.map(x=>radio(x.id===p.flight, x.air+' '+x.no, tm(toMin(x.dep))+' → '+tm(toMin(x.arr))+' · '+x.stops+' · return '+tm(toMin(x.rd))+' → '+tm(toMin(x.ra)), R(x.out+x.ret)+' / adult', 'setFlight', x.id)).join('') : ''}
+    </div>
+    <div class="h3">Day 2 · ${dayOf(p,1)} · Mumbai sightseeing</div>
+    <div class="card">
+      <div class="mu" style="margin-bottom:8px">Route optimised: ${route}</div>
+      ${TRIP_SIGHTS.map(s=>{ const on=p.sights.includes(s.id); return `<div class="addon"><div class="sp"><b>${s.n}</b><div class="mu">${s.when} · ${s.h} · estimate ${R(s.cost)}</div></div><button class="btn sm ${on?'g':''}" data-act="sight" data-arg="${s.id}">${on?'Remove':'Add'}</button></div>`; }).join('')}
+      <div class="mu" style="margin-top:8px">${left>=0 ? R(left)+' left in your budget for extra stops.' : 'Over budget: remove a stop to fit.'}</div>
+    </div>
+    <div class="h3">Day 3 · ${p.ret} · Return to Jaipur</div>
+    <div class="card">
+      <div class="slot"><span class="mu">Morning</span><div><b>Hotel checkout reminder</b><div class="mu">Checkout time is confirmed by the hotel</div></div></div>
+      <div class="slot"><span class="mu">Midday</span><div><b>Cab from hotel to Mumbai airport</b><div class="mu">Estimate ₹800</div></div></div>
+      <div class="slot"><span class="mu">Afternoon</span><div><b>Return flight to Jaipur</b><div class="mu">${c.mode==='flight' ? f.air+' '+f.no+' · '+tm(toMin(f.rd))+' → '+tm(toMin(f.ra)) : c.mode==='bus' ? TRIP_BUS.op+' (overnight)' : 'No return transport selected'}</div></div></div>
+      <div class="slot"><span class="mu">Evening</span><div><b>Final trip summary and booking history</b></div></div>
+    </div>
+    ${h ? `<div class="h3">Hotel</div>` + TRIP_HO.map(x=>radio(x.id===p.hotel, x.name, x.area+' · rating '+x.rating, R(x.price)+' / night', 'setHotel', x.id)).join('') : ''}
+    <button class="btn" data-go="tripSummary">Review booking summary</button>
+    <button class="btn g" data-go="tripPlan">Back to options</button>
+    <div class="mu" style="margin-top:8px">Changes to a confirmed booking need your approval and follow supplier rules. Rido does not book attractions. Opening hours and travel times are estimates.</div>
+  </div>`;
+};
+
+SCR.tripSummary = () => {
+  const p=S.plan, c=currentCombo(), st=p.st;
+  const payNow = c.flights + c.bus + c.hotel;
+  const row=(t,sub,amt,status)=>`<div class="card"><div class="row"><div class="sp"><b>${t}</b><div class="mu">${sub}</div></div><div class="tr"><b>${R(amt)}</b><div style="margin-top:4px">${statusPill(status)}</div></div></div></div>`;
+  let rows='';
+  if(c.mode==='flight'){
+    rows += row('Outbound flight', `${c.f.air} ${c.f.no} · ${p.depart} · ${tm(toMin(c.f.dep))} → ${tm(toMin(c.f.arr))}`, c.f.out*p.pax, st.out);
+    rows += row('Return flight', `${c.f.air} ${c.f.no} · ${p.ret} · ${tm(toMin(c.f.rd))} → ${tm(toMin(c.f.ra))}`, c.f.ret*p.pax, st.ret);
+  }
+  if(c.mode==='bus') rows += row('Bus, both ways', `${TRIP_BUS.op} · ${p.pax} seats each way`, c.bus, st.out);
+  if(c.h) rows += row('Hotel', `${c.h.name} · ${p.nights} nights incl. tax`, c.hotel, st.hotel);
+  if(c.transfer) rows += row('Airport transfers (estimate)', '4 legs, booked through the cab connector', c.transfer, st.transfer);
+  if(c.local) rows += row('Local cabs and sightseeing (estimate)', 'Booked on the day, once a provider confirms', c.local, st.local);
+  return `${H('Booking summary')}
+  <div class="pad">
+    <div class="card"><b>Jaipur → Mumbai · ${p.depart} – ${p.ret}</b><div class="mu">${p.pax} adults · ${p.nights} nights · budget ${R(p.budget)}</div></div>
+    ${rows}
+    <div class="card">
+      <div class="kv"><span>Payable in Rido now (flights, bus and hotel)</span><b>${R(payNow)}</b></div>
+      <div class="kv"><span>Estimated total for the trip</span><b>${R(c.total)}</b></div>
+      <div class="mu" style="margin-top:6px">Transfers and local cabs are estimates. A cab is never shown as booked until the provider confirms.</div>
+    </div>
+    ${p.booked
+      ? `<div class="card"><span class="pill ok">Trip booked</span><div class="mu" style="margin-top:6px">Flight and hotel confirmations come from TBO. Transfers are confirmed by the cab provider.</div></div><button class="btn" data-root="trips">Open My Trips</button>`
+      : `<button class="btn" data-act="tripPay">Pay ${R(payNow)} and confirm trip</button>`}
+    <button class="btn g" data-back>Back to itinerary</button>
+    <div class="mu" style="margin-top:8px">Flight, hotel, bus and cab bookings are marked confirmed only after the provider returns confirmation.</div>
+  </div>`;
+};
+
+SCR.tripDetail = () => {
+  const p=S.plan, c=currentCombo(), f=c.f, h=c.h, d=S.delay?60:0, bk=p.booked;
+  const ok = bk?'Confirmed':'Planned', okc = bk?'ok':'gr';
+  let items='';
+  if(f){
+    const dep=toMin(f.dep)+d, pick=dep-120, arr=toMin(f.arr)+d, hp=arr+30, rpick=toMin(f.rd)-120;
+    items += tli('✈️','Flight · Jaipur → Mumbai', `${f.air} ${f.no} · ${p.depart} · departs ${tm(dep)}`, ok, okc);
+    items += tli('🚕','Ride · Home → Jaipur airport', `Pickup ${tm(pick)} · reminder 1 hr before · linked to flight`, 'Suggested','in','<button class="btn sm" data-go="cabSearch">Compare cabs for this leg</button>');
+  } else if(c.mode==='bus'){
+    items += tli('🚌', TRIP_BUS.op, `${TRIP_BUS.kind} · ${p.depart}, overnight`, ok, okc);
+  }
+  if(h) items += tli('🏨', h.name, `Check-in ${p.depart} · arrival details emailed to hotel`, ok, okc);
+  if(f){
+    items += tli('🚕','Ride · Mumbai airport → hotel', `Pickup ${tm(toMin(f.arr)+d+30)} · linked to landing at ${tm(toMin(f.arr)+d)}`, 'Suggested','in','<button class="btn sm" data-go="cabSearch">Compare cabs for this leg</button>');
+    items += tli('✈️','Return flight · Mumbai → Jaipur', `${f.air} ${f.no} · ${p.ret} · departs ${tm(toMin(f.rd))}`, ok, okc);
+    items += tli('🚕','Ride · Hotel → Mumbai airport', `Pickup ${tm(toMin(f.rd)-120)} · created from the return flight`, 'Waiting','gr');
+    items += tli('🚕','Ride · Jaipur airport → home', 'Created after the return flight is booked', 'Waiting','gr');
+  }
+  const banner = (S.delay && f) ? `<div class="delaybanner">✈️ Flight delayed by 1 hour. Airport pickup moved from ${tm(toMin(f.dep)-120)} to ${tm(toMin(f.dep)-60)}. Reminders and the hotel transfer updated automatically.</div>` : '';
+  return `${H('Jaipur → Mumbai trip')}${banner}
+  <div class="pad">
+    <div class="row" style="margin-bottom:10px"><span class="pill ${bk?'ok':'gr'}">${bk?'Booked · connected trip':'Plan · not booked yet'}</span><span class="sp"></span>${f ? `<button class="btn sm g" data-act="delay">${S.delay?'Undo flight delay':'Demo: flight delayed +1 hr'}</button>` : ''}</div>
+    <div class="tlwrap">${items}</div>
+    <div class="card" style="margin-top:6px"><b>Smart prompts</b><div class="mu" style="margin-top:4px">Helpful, not pushy. Reminders only when they matter to this trip.</div>
+      <div class="row" style="margin-top:8px"><button class="btn sm g" data-go="tripItin">Change plan</button><button class="btn sm g" data-go="tripSummary">Booking summary</button></div></div>
+  </div>`;
+};
+
+SCR.plannerAI = () => SCR.tripItin();
+
+
+SCR.home = () => `
+<div class="hdr" style="padding-top:16px">
+  <div style="flex:1"><div class="mu">Good evening, Priya</div><h2 style="font-size:20px">Where to?</h2></div>
+  <button class="ib" data-go="assistant" aria-label="Assistant">💬</button>
+  <button class="ib" data-go="notifs" aria-label="Notifications">🔔${unread()?`<span class="dotn">${unread()}</span>`:''}</button>
+</div>
+<div class="pad">
+  <button class="micbar" data-go="voice"><span class="mi">${MIC_SM}</span><span>Tap to speak, or “Where do you want to go?”</span></button>
+  <div class="svcgrid">
+    <button class="svct" data-go="cabSearch"><span class="pill or">ENHANCED</span><div class="em">🚕</div><b>Cabs</b><div class="mu">Compare &amp; redirect</div></button>
+    <button class="svct" data-go="flightSearch"><span class="pill new">NEW</span><div class="em">✈️</div><b>Flights</b><div class="mu">Domestic &amp; international</div></button>
+    <button class="svct" data-go="hotelSearch"><span class="pill new">NEW</span><div class="em">🏨</div><b>Hotels</b><div class="mu">Hotels &amp; homestays</div></button>
+    <button class="svct" data-go="busSearch"><span class="pill new">NEW</span><div class="em">🚌</div><b>Intercity Bus</b><div class="mu">Reserved seats</div></button>
+  </div>
+  <div class="h3">Your next trip</div>
+  <button class="tripcard" data-go="tripDetail">
+    <div class="row"><div><div class="mu">Upcoming · ${S.plan.depart} – ${S.plan.ret}</div><h3>Jaipur → Mumbai</h3></div><span class="sp"></span><span class="pill wa">2 to add</span></div>
+    <div class="mu">${S.plan.booked?'Booked · airport rides linked':'Plan ready · review and confirm'}</div>
+    <div class="icons">✈️ 🏨 🚕</div>
+  </button>
+  <div class="h3">Recent searches</div>
+  <button class="listrow" data-go="cabSearch"><span class="ico">🚕</span><div class="sp"><b>Cab · Malviya Nagar</b><div class="mu">Current location</div></div></button>
+  <button class="listrow" data-go="flightSearch"><span class="ico">✈️</span><div class="sp"><b>Flight · Delhi → Jaipur</b><div class="mu">Fri 5 Dec · 2 adults</div></div></button>
+  <button class="listrow" data-go="busSearch"><span class="ico">🚌</span><div class="sp"><b>Bus · Delhi → Jaipur</b><div class="mu">Fri 5 Dec</div></div></button>
+  <button class="listrow" data-go="hotelSearch"><span class="ico">🏨</span><div class="sp"><b>Hotel · Jaipur, 2 nights</b><div class="mu">Under ₹3,000 a night</div></div></button>
+</div>`;
+
+/* ---- cabs (unchanged core, enhanced) ---- */
+SCR.cabSearch = () => `
+${H('Book a ride')}
+<div class="pad">
+  <div class="field"><label>Pickup</label>
+    <div class="row"><input value="Current location (GPS)"><button class="btn sm g" data-act="gps">📍 Re-detect</button></div>
+  </div>
+  <div class="mu" style="margin:-2px 2px 10px">GPS fills your pickup automatically. There is no map pin; you can edit the text.</div>
+  <div class="field"><label>Drop</label><input value="${S.cab.to}"></div>
+  <button class="btn g" data-act="swap">⇅ Swap pickup &amp; drop</button>
+  <div class="card" style="margin-top:12px"><div class="mu">Rido compares Uber, Ola and Rapido. Fares are estimates. The ride is booked and paid in the provider’s app.</div></div>
+  <button class="btn" data-go="cabResults">Find rides</button>
+</div>`;
+
+SCR.cabResults = () => {
+  const cheap = [...CAB].sort((a,b)=>a.lo-b.lo)[0];
+  const list = (S.sort==='fast' && S.linked) ? [...CAB].sort((a,b)=>a.eta-b.eta) : [...CAB].sort((a,b)=>a.lo-b.lo);
+  return `
+${H('Cab options')}
+<div class="pad">
+  <div class="mu" style="margin-bottom:10px">Current location → ${S.cab.to}</div>
+  <div class="seg">
+    <button class="${S.sort==='cheap'?'on':''}" data-act="sortCab" data-arg="cheap">Cheapest</button>
+    <button class="${S.sort==='fast'?'on':''} ${S.linked?'':'dis'}" data-act="sortCab" data-arg="fast">Fastest</button>
+  </div>
+  ${S.linked ? '' : `<div class="hint">Fastest sorts by arrival time and needs a linked account. <button class="lnk" data-act="link">Link Uber (demo)</button></div>`}
+  ${list.map(c=>`
+  <div class="card">
+    <div class="row"><div><b>${c.ride}</b><div class="mu">${c.p} · ${c.eta} min away</div></div><span class="sp"></span>${c.p===cheap.p?'<span class="pill new">CHEAPEST</span>':''}</div>
+    <div class="rng"><b>${R(c.lo)} – ${R(c.hi)}</b> <span class="pill">Estimate</span></div>
+    <div class="mu">Lowest starting fare: ${R(c.lo)}</div>
+    <button class="btn" data-go="cabRedirect" data-arg="${c.p}">Book in ${c.p} app</button>
+  </div>`).join('')}
+  <div class="card tip"><b>AI fare-saving tip</b><div class="mu" style="margin-top:4px;color:#ffd9c2">Estimate: fares on this route are often lower after 9:30 pm, based on past fares.</div></div>
+  <div class="mu">Ranges are estimates, not a confirmed price. The final fare is shown by the provider.</div>
+</div>`;
+};
+
+SCR.cabRedirect = (p) => `
+${H('Opening ' + p)}
+<div class="pad center">
+  <div style="font-size:56px">🚕</div>
+  <h3>Opening the ${p} app</h3>
+  <p class="mu">Rido compares fares and hands over to the provider. This ride is booked and paid in ${p}, not in Rido.</p>
+  <div class="card" style="text-align:left;margin-top:16px">
+    <div class="kv"><span>Pickup</span><b>Current location</b></div>
+    <div class="kv"><span>Drop</span><b>${S.cab.to}</b></div>
+    <div class="kv"><span>Estimated fare</span><b>${R(182)} – ${R(260)} (estimate)</b></div>
+  </div>
+  <button class="btn" data-act="cabBack" data-arg="${p}">I've booked it, back to Rido</button>
+  <button class="btn g" data-back>Cancel</button>
+</div>`;
+
+/* ---- flights ---- */
+SCR.flightSearch = () => `
+${H('Flights')}
+<div class="pad">
+  <div class="seg"><button class="on">One-way</button><button>Return</button></div>
+  <div class="field"><label>From</label><input value="Delhi (DEL)"></div>
+  <div class="field"><label>To</label><input value="Jaipur (JAI)"></div>
+  <div class="two">
+    <div class="field"><label>Date</label><input value="Fri, 5 Dec"></div>
+    <div class="field"><label>Travellers</label><input value="${S.pax.length} adults · Economy"></div>
+  </div>
+  <div class="card row" style="padding:12px">
+    <div class="sp"><b>Flexible dates ±3 days</b><div class="mu">Each date is a separate search</div></div>
+    <button class="tog ${S.flex?'on':''}" data-act="flex" aria-label="Flexible dates"></button>
+  </div>
+  <div class="field"><label>Budget (optional)</label><input value="${R(S.budget)}"></div>
+  <button class="btn" data-go="flightResults">Search flights</button>
+  <div class="mu" style="margin-top:10px">Live results from TBO. Flights are booked and paid inside Rido.</div>
+</div>`;
+
+SCR.flightResults = () => {
+  const top = FL.filter(f=>f.tag);
+  const above = FL.filter(f=>f.price>S.budget).length;
+  return `
+${H('Delhi → Jaipur')}
+<div class="pad">
+  <div class="mu" style="margin-bottom:8px">Fri 5 Dec · 2 adults · Economy</div>
+  ${S.flex ? `<div class="dates">${[['3','3,600'],['4','3,300'],['5','3,850'],['6','3,500'],['7','3,700'],['8','3,450'],['9','3,900']].map(([d,p])=>`<button class="${d==='5'?'on':''}" data-act="noop"><b>${d} Dec</b><span class="mu">from</span><div class="p">₹${p}</div></button>`).join('')}</div>` : ''}
+  ${above ? `<div class="topbox" style="margin:0 0 12px"><div class="lab">Direct fares above your ${R(S.budget)} budget</div><div class="mu" style="color:#eadfd7">${above} of ${FL.length} direct flights are above budget. Rido also shows nearby airports, connecting itineraries and an intercity bus option.</div><button class="btn sm" data-go="busResults" style="margin-top:8px">See bus alternative from ${R(780)}</button></div>` : ''}
+  <div class="h3">Top three for your budget</div>
+  ${top.map(f=>`
+  <div class="card fl" style="padding:12px">
+    <div class="row"><span class="pill ${f.price<=S.budget?'ok':'wa'}">${f.tag}</span><span class="sp"></span><span class="pill gr">${f.price<=S.budget?'Within budget':'Closest above budget'}</span></div>
+    <div class="row" style="margin-top:8px"><div><b>${f.air} ${f.no}</b><div class="mu">${tm(toMin(f.dep))} → ${tm(toMin(f.arr))} · ${f.stops}</div></div><span class="sp"></span><div class="tr"><b>${R(f.price)}</b><div class="mu">per adult</div></div></div>
+  </div>`).join('')}
+  <div class="seg" style="margin-top:6px">
+    <button class="${S.fsort==='price'?'on':''}" data-act="fsort" data-arg="price">Price</button>
+    <button class="${S.fsort==='time'?'on':''}" data-act="fsort" data-arg="time">Time</button>
+    <button class="${S.fsort==='conv'?'on':''}" data-act="fsort" data-arg="conv">Convenience</button>
+  </div>
+  ${sortF(FL).map(f=>`
+  <div class="card fl">
+    <div class="row"><div><b>${f.air} ${f.no}</b><div class="mu">${f.stops}</div></div><span class="sp"></span><div class="tr"><b>${tm(toMin(f.dep))} → ${tm(toMin(f.arr))}</b><div class="mu">${f.dur}</div></div></div>
+    <div class="row" style="margin-top:10px"><div><b>${R(f.price)}</b> <span class="mu">per adult</span></div><span class="sp"></span><button class="btn sm" data-act="pick" data-arg="${f.id}">Select</button></div>
+  </div>`).join('')}
+  <div class="mu">Fares are re-checked live before payment. Any change is shown first.</div>
+</div>`;
+};
+
+SCR.travellers = () => {
+  const t = S.bk.type;
+  const title = t==='hotel' ? 'Guest details' : t==='bus' ? 'Passenger & boarding' : 'Traveller details';
+  const next = t==='flight' ? 'addons' : 'review';
+  const trav = t==='hotel' ? '' : `
+    <div class="h3">Saved travellers <span class="mu">saved once, reused on every booking</span></div>
+    <div class="chips">${S.travellers.map(x=>chip(`${x.name} · ${x.rel}`, S.pax.includes(x.id), 'pax', x.id)).join('')}</div>`;
+  const boarding = t==='bus' ? `
+    <div class="h3">Boarding point</div>
+    <div class="chips">${chip('Sample Stop A · 6:20 AM', true, 'noop')}${chip('Sample Stop B · 6:45 AM', false, 'noop')}</div>` : '';
+  return `
+${H(title)}
+<div class="pad">
+  ${trav}${boarding}
+  <div class="h3">Contact</div>
+  <div class="field"><label>Mobile</label><input value="+91 98•••••021"></div>
+  <div class="field"><label>Email</label><input value="priya@example.com"></div>
+  ${t==='hotel' ? '<div class="field"><label>Lead guest</label><input value="Priya Sharma"></div>' : ''}
+  ${t==='flight' ? '<div class="card warn">Names must match the ID you carry to the airport. Details are pre-filled from your saved profile.</div>' : ''}
+  <button class="btn" data-go="${next}">Continue</button>
+</div>`;
+};
+
+SCR.addons = () => `
+${H('Add-ons')}
+<div class="pad">
+  <div class="mu" style="margin-bottom:6px">Optional. Availability depends on the airline.</div>
+  <div class="card" style="padding:4px 14px">
+    ${Object.keys(ADDON).map(k=>`
+    <div class="addon">
+      <div class="sp"><b>${ADDON[k].n}</b><div class="mu">${R(ADDON[k].p)} per passenger</div></div>
+      <button class="tog ${S.addons[k]?'on':''}" data-act="addon" data-arg="${k}" aria-label="${ADDON[k].n}"></button>
+    </div>`).join('')}
+  </div>
+  <div class="card warn">Web check-in and boarding passes stay with the airline.</div>
+  <button class="btn" data-go="review">Review &amp; pay</button>
+</div>`;
+
+/* ---- hotels ---- */
+SCR.hotelSearch = () => `
+${H('Hotels')}
+<div class="pad">
+  <div class="field"><label>City, area or landmark</label><input value="Jaipur railway station area"></div>
+  <div class="two">
+    <div class="field"><label>Check-in</label><input value="Fri, 5 Dec"></div>
+    <div class="field"><label>Check-out</label><input value="Sun, 7 Dec"></div>
+  </div>
+  <div class="two">
+    <div class="field"><label>Rooms</label><input value="1"></div>
+    <div class="field"><label>Guests</label><input value="2"></div>
+  </div>
+  <div class="field"><label>Budget per night</label><input value="${R(S.hbudget)}"></div>
+  <button class="btn" data-go="hotelResults">Search hotels</button>
+</div>`;
+
+SCR.hotelResults = () => `
+${H('Hotels in Jaipur')}
+<div class="pad">
+  <div class="mu" style="margin-bottom:8px">Budget ${R(S.hbudget)} a night · sorted by price</div>
+  <div class="h3">Top three for your budget</div>
+  ${HO.map(h=>`
+  <div class="card" style="padding:12px">
+    <div class="row"><span class="pill ${h.price<=S.hbudget?'ok':'wa'}">${h.tag}</span><span class="sp"></span><span class="pill gr">${h.price<=S.hbudget?'Within budget':'Above budget'}</span></div>
+    <div class="row" style="margin-top:8px"><div><b>${h.name}</b><div class="mu">${h.area} · ★${h.rating}</div></div><span class="sp"></span><div class="tr"><b>${R(h.price)}</b><div class="mu">per night</div></div></div>
+    <div class="mu" style="margin-top:6px">${h.amen}</div>
+    <button class="btn sm" data-act="pick" data-arg="${h.id}" style="margin-top:8px">View rooms</button>
+  </div>`).join('')}
+  <div class="mu">Homestays appear only where TBO carries them.</div>
+</div>`;
+
+SCR.hotelDetail = () => {
+  const h = S.bk.item; const room = S.bk.room || 'deluxe'; S.bk.room = room;
+  const rooms = [{k:'deluxe', n:'Deluxe Room', inc:'Breakfast included', p:h.price}, {k:'std', n:'Standard Room', inc:'Room only', p:h.price-300}];
+  return `
+${H(h.name)}
+<div class="pad">
+  <div class="thumb">${h.area}</div>
+  <div class="mu">★${h.rating} · ${h.stars}-star · ${h.amen}</div>
+  <div class="h3">Choose a room</div>
+  ${rooms.map(r=>`
+  <button class="room ${room===r.k?'on':''}" data-act="room" data-arg="${r.k}">
+    <span class="radio"></span>
+    <div class="sp"><b>${r.n}</b><div class="mu">${r.inc}</div></div>
+    <div class="tr"><b>${R(r.p)}</b><div class="mu">per night</div></div>
+  </button>`).join('')}
+  <div class="card" style="margin-top:6px"><b>Cancellation</b><div class="mu">Free cancellation until 48 hours before check-in (sample policy). Shown before you pay.</div></div>
+  <button class="btn" data-go="travellers">Continue with ${room==='std'?'Standard':'Deluxe'}</button>
+</div>`;
+};
+
+/* ---- bus ---- */
+SCR.busSearch = () => `
+${H('Intercity bus')}
+<div class="pad">
+  <div class="field"><label>From</label><input value="Delhi"></div>
+  <div class="field"><label>To</label><input value="Jaipur"></div>
+  <div class="field"><label>Date</label><input value="Fri, 5 Dec"></div>
+  <div class="h3">Filter</div>
+  <div class="chips">${chip('AC',true,'noop')}${chip('Sleeper',false,'noop')}${chip('Seater',false,'noop')}${chip('Morning',false,'noop')}</div>
+  <button class="btn" data-go="busResults">Search buses</button>
+</div>`;
+
+SCR.busResults = () => `
+${H('Delhi → Jaipur')}
+<div class="pad">
+  <div class="mu" style="margin-bottom:8px">Fri 5 Dec · sorted by price</div>
+  ${[...BU].sort((a,b)=>a.price-b.price).map(b=>`
+  <div class="card">
+    <div class="row"><div><b>${b.op}</b><div class="mu">${b.kind}</div></div><span class="sp"></span><div class="tr"><b>${R(b.price)}</b><div class="mu">per seat</div></div></div>
+    <div class="row" style="margin-top:8px"><span class="mu">${tm(toMin(b.dep))} → ${tm(toMin(b.arr))}</span><span class="sp"></span>${b.tag?`<span class="pill or">${b.tag}</span>`:''}</div>
+    <button class="btn sm" data-act="pick" data-arg="${b.id}" style="margin-top:10px">Select seats</button>
+  </div>`).join('')}
+  <div class="card warn">A bus ticket is cancelled as a whole. Individual seats cannot be cancelled.</div>
+</div>`;
+
+SCR.seats = () => {
+  const cols = ['A','B',null,'C','D'];
+  const booked = (r,c) => (r*3 + c.charCodeAt(0)) % 5 === 0;
+  let grid = '';
+  for(let r=1;r<=8;r++){
+    cols.forEach(c=>{
+      if(c===null){ grid += '<span class="seat aisle"></span>'; return; }
+      const id = r+c; const bk = booked(r,c); const sel = S.bk.seats.includes(id);
+      grid += `<button class="seat ${bk?'bk':''} ${sel?'sel':''}" ${bk?'disabled':''} data-act="seat" data-arg="${id}">${bk?'':id}</button>`;
+    });
+  }
+  return `
+${H('Select seats')}
+<div class="pad">
+  <div class="mu" style="margin-bottom:8px">${S.bk.item.op} · ${S.bk.item.kind} · ${R(S.bk.item.price)} per seat</div>
+  <div class="seats">${grid}</div>
+  <div class="legend"><span><i style="background:var(--card2)"></i>Available</span><span><i style="background:var(--or)"></i>Selected</span><span><i style="background:#111"></i>Booked</span></div>
+  <div class="card"><div class="kv"><span>Selected</span><b>${S.bk.seats.length ? S.bk.seats.join(', ') : 'None yet'}</b></div></div>
+  <button class="btn" data-act="seatsNext" ${S.bk.seats.length?'':''}>Continue</button>
+</div>`;
+};
+
+/* ---- review, pay, confirm ---- */
+SCR.review = () => {
+  const bk = S.bk; if(!bk) return H('Review') + '<div class="pad">Nothing to review yet.</div>';
+  const p = priceOf(bk);
+  const policy = bk.type==='flight' ? 'Cancellation charges are shown before you confirm. Refunds follow the fare rules.'
+               : bk.type==='hotel'  ? 'Free cancellation until 48 hours before check-in (sample policy).'
+               : 'The whole ticket is cancelled as one. Seat-level cancellation is not supported.';
+  return `
+${H('Review & pay')}
+<div class="pad">
+  <div class="card"><b>${titleOf(bk)}</b><div class="mu" style="margin-top:4px">${bk.type==='flight' ? 'Fri 5 Dec · ' + tm(toMin(bk.item.dep)) + ' → ' + tm(toMin(bk.item.arr)) + ' · ' + S.pax.length + ' adults' : bk.type==='hotel' ? 'Check-in Fri 5 Dec · check-out Sun 7 Dec' : 'Fri 5 Dec · seats ' + bk.seats.join(', ')}</div></div>
+  <div class="card">
+    ${p.lines.map(([a,b])=>`<div class="kv"><span>${a}</span><b>${b<0?'−':''}${R(Math.abs(b))}</b></div>`).join('')}
+    <div class="kv tot"><span>Total</span><b>${R(p.total)}</b></div>
+    <div class="mu">The price shown is the price paid. Earn +${p.earn} Rido Points.</div>
+  </div>
+  <div class="card row">
+    <div class="sp"><b>Use Rido Points</b><div class="mu">Balance ${S.points.toLocaleString('en-IN')} · up to 10% of booking (sample)</div></div>
+    <button class="tog ${S.usePts?'on':''}" data-act="pts" aria-label="Use points"></button>
+  </div>
+  <div class="h3">Pay with Rido's gateway</div>
+  <div class="chips">${['UPI','Card','Net banking','Wallet'].map(m=>chip(m, S.payM===m, 'payM', m)).join('')}</div>
+  <div class="mu" style="margin-bottom:6px">${policy}</div>
+  <button class="btn" data-act="pay" data-arg="ok">Pay ${R(p.total)}</button>
+  <div style="text-align:center;margin-top:6px">
+    <button class="lnk" data-act="pay" data-arg="payfail">Demo: payment fails</button> ·
+    <button class="lnk" data-act="pay" data-arg="bookfail">Demo: booking fails after payment</button>
+  </div>
+</div>`;
+};
+
+SCR.payResult = () => {
+  const st = S.pay ? S.pay.state : 'processing';
+  if(st==='processing') return `<div class="pad center"><div class="spin"></div><h3>Confirming payment</h3><p class="mu">Paid through Rido's payment gateway. Please keep the app open.</p></div>`;
+  if(st==='failed') return `${H('Payment')}<div class="pad center"><div class="bigic bad">✕</div><h3>Payment failed</h3><p class="mu">No money was taken and no booking was made. You can try again.</p><button class="btn" data-back>Try again</button><button class="btn g" data-root="home">Back to home</button></div>`;
+  if(st==='refund') return `${H('Booking')}<div class="pad center"><div class="bigic bad">!</div><h3>Booking failed after payment</h3><p class="mu">${R(S.lastBk.total)} will be refunded automatically to your original payment method. Status: Refund pending.</p><button class="btn" data-act="toConfirm">View booking status</button><button class="btn g" data-root="home">Back to home</button></div>`;
+  return `${H('Payment')}<div class="pad center"><div class="bigic ok">✓</div><h3>Booking confirmed</h3><p class="mu">Saved to My Trips. Your ticket or voucher is also emailed.</p><button class="btn" data-act="toConfirm">View booking</button><button class="btn g" data-root="home">Back to home</button></div>`;
+};
+
+SCR.confirm = () => {
+  const b = S.lastBk;
+  if(!b) return H('Booking') + '<div class="pad mu">No booking yet.</div>';
+  const prompts = (b.type==='flight' && b.status==='Confirmed') ? `
+    ${!S.noHotel ? `<div class="card"><b>Need a hotel near the arrival area?</b><div class="mu">Hotels near Jaipur airport and city centre, with a price filter.</div>
+      <div class="row" style="margin-top:8px"><button class="btn sm" data-go="hotelSearch">Show hotels</button><button class="btn sm g" data-act="noHotel">No thanks</button></div></div>` : ''}
+    ${!S.noRide ? `<div class="card"><b>Need a ride to the airport?</b><div class="mu">Pickup is timed from your flight. Live cab comparison for that leg.</div>
+      <div class="row" style="margin-top:8px"><button class="btn sm" data-go="cabSearch">Compare cabs</button><button class="btn sm g" data-act="noRide">No thanks</button></div></div>` : ''}` : '';
+  return `
+${H('Booking details')}
+<div class="pad">
+  <div class="center" style="padding:14px 0 10px"><div class="bigic ${b.status==='Confirmed'?'ok':'bad'}">${b.status==='Confirmed'?'✓':'!'}</div>
+    <h3>${b.status==='Confirmed' ? 'Booking confirmed' : (b.status==='Refund pending' ? 'Refund in progress' : 'Booking')}</h3>
+    <div class="mu">${b.id}</div></div>
+  <div class="card">
+    <b>${titleOf(b)}</b>
+    <div class="mu" style="margin-top:4px">${b.ref}</div>
+    <div class="kv" style="margin-top:8px"><span>Total paid</span><b>${R(b.total)}</b></div>
+    <div class="kv"><span>Status</span><span class="pill ${b.status==='Confirmed'?'ok':'in'}">${b.status}</span></div>
+    <div class="mu" style="margin-top:6px">Saved to My Trips. Cancellation and refund follow the booking terms shown before payment.</div>
+  </div>
+  ${prompts}
+  <button class="btn" data-root="trips">Open My Trips</button>
+  <button class="btn g" data-root="home">Back to home</button>
+</div>`;
+};
+
+/* ---- trips ---- */
+SCR.trips = () => {
+  const saved = S.cabLog.filter(c=>c.st==='Taken').reduce((a,c)=>a+c.sv,0);
+  return `
+<div class="hdr" style="padding-top:16px"><h2 style="font-size:20px">My Trips</h2><span class="sp"></span><button class="ib" data-go="notifs" aria-label="Notifications">🔔</button></div>
+<div class="pad">
+  <button class="tripcard" data-go="tripDetail">
+    <div class="row"><div><div class="mu">Upcoming · 2 bookings + 2 to add</div><h3>Jaipur → Mumbai</h3><div class="mu">${S.plan.depart} – ${S.plan.ret}</div></div><span class="sp"></span><span class="pill wa">2 to add</span></div>
+    <div class="icons">✈️ 🏨 🚕</div>
+  </button>
+  ${S.bookings.length ? `<div class="h3">New bookings</div>` + S.bookings.map(b=>`
+  <button class="listrow" data-act="openBk" data-arg="${b.id}">
+    <span class="ico">${b.type==='flight'?'✈️':b.type==='hotel'?'🏨':b.type==='bus'?'🚌':'🗺️'}</span>
+    <div class="sp" style="min-width:0"><b>${titleOf(b)}</b><div class="mu">${b.id} · ${R(b.total)}</div></div>
+    <span class="pill ${b.status==='Confirmed'?'ok':b.status==='Failed'?'bad':'in'}">${b.status}</span>
+  </button>`).join('') : ''}
+  <div class="h3">Plan with AI</div>
+  <button class="btn g" data-go="tripPlan">✨ Plan a Jaipur → Mumbai trip (AI)</button>
+  <div class="h3">Cab activity &amp; savings</div>
+  <div class="card">
+    <div class="row"><div><b>Estimated savings</b><div class="mu">Based on estimated fare ranges</div></div><span class="sp"></span><b style="color:var(--ok)">${R(saved)}</b></div>
+    <div style="margin-top:8px">
+      ${S.cabLog.map(c=>`<div class="kv"><span>${c.p} ride · ${c.when}</span><b>${c.st}${c.st==='Taken'?' · saved '+R(c.sv):''}</b></div>`).join('')}
+    </div>
+    <div class="mu" style="margin-top:6px">Rides booked in provider apps appear here only after you confirm them. Cab rides earn no Rido Points.</div>
+  </div>
+</div>`;
+};
+
+/* ---- AI assistant (scripted in this POC) ---- */
+SCR.assistant = () => `
+<div class="hdr" style="padding-top:12px"><button class="ib" data-back>←</button><div style="flex:1"><h2 style="font-size:17px">Rido Assistant</h2><div class="mu">English · Hindi · Hinglish</div></div></div>
+<div class="chat" id="chat">${S.chat.map(m=>`
+  <div class="bub ${m.f==='u'?'u':'ai'}">${m.t}
+    ${m.c ? chatCards(m.c) : ''}
+    ${m.b ? `<button class="btn sm" data-go="${m.b.go}" style="margin-top:8px">${m.b.l}</button>` : ''}
+  </div>`).join('')}
+</div>
+<div class="pad" style="padding-top:0">
+  <div class="chips">
+    <button class="chip" data-act="sugg" data-arg="I want to travel from Jaipur to Mumbai for 3 days with a budget of INR 25,000">Jaipur → Mumbai, 3 days</button>
+    <button class="chip" data-act="sugg" data-arg="Book a flight from Mumbai to Hyderabad on Friday for two people">Flight Mumbai → Hyderabad</button>
+    <button class="chip" data-act="sugg" data-arg="Find a hotel near Jaipur railway station under 3000 for tonight">Hotel under ₹3,000</button>
+    <button class="chip" data-act="sugg" data-arg="Cheapest cab to the airport now">Cheapest cab</button>
+    <button class="chip" data-act="sugg" data-arg="How do I cancel my hotel booking?">Cancel a hotel</button>
+    <button class="chip" data-act="sugg" data-arg="Mujhe kal subah Delhi se Jaipur jaana hai">Hinglish: bus</button>
+  </div>
+</div>
+<div class="chatbar">
+  <button class="ib" data-act="asMic" aria-label="Voice">${MIC_SM}</button>
+  <input id="chatIn" placeholder="Type or say your request" autocomplete="off">
+  <button class="btn" data-act="asSend">Send</button>
+</div>`;
+
+function chatCards(c){
+  return `<div class="cc">${c.ids.map(id=>{
+    const it = ITEMS[id];
+    const name = it.type==='flight' ? `${it.air} ${it.no}` : it.type==='bus' ? it.op : it.name;
+    const sub = it.type==='flight' ? `${tm(toMin(it.dep))} → ${tm(toMin(it.arr))} · ${it.stops}` : it.type==='bus' ? `${tm(toMin(it.dep))} → ${tm(toMin(it.arr))} · ${it.kind}` : it.area;
+    const price = it.type==='hotel' ? `${R(it.price)}/night` : `${R(it.price)}`;
+    return `<div class="cc-i"><div class="sp"><b>${name}</b><div class="mu">${sub}</div></div><div class="tr"><b>${price}</b><div><button class="btn sm" data-act="chatPick" data-arg="${id}">Select</button></div></div></div>`;
+  }).join('')}</div>`;
+}
+
+function botReply(raw){
+  const t = raw.toLowerCase();
+  if(/jaipur/.test(t) && /mumbai/.test(t))
+    return {t:'Here is a Jaipur → Mumbai plan for 3 days on a ₹25,000 budget: flights, a hotel for 2 nights, airport transfers and local cabs. Flight and hotel prices come from TBO. Transfers and cabs are estimates.', b:{go:'tripPlan', l:'Open trip plan'}};
+  if(/mumbai/.test(t) && /hyderabad/.test(t))
+    return {t:'Here are non-stop flights from Mumbai to Hyderabad on Friday for two travellers. Prices are live from TBO (sample). Pick one and I will take you to traveller details.', c:{ids:['cf1','cf2']}};
+  if(/mujhe|jaana|kal subah/.test(t) || (/delhi/.test(t) && /jaipur/.test(t) && /bus/.test(t)))
+    return {t:'Kal subah ke liye Delhi se Jaipur ki bus options (sample). Ek chunein, phir seat select karein. Bus booking Rido ke andar hogi.', c:{ids:['b4','b2']}};
+  if(/hotel/.test(t))
+    return {t:'Jaipur railway station ke paas tonight ke hotels, ₹3,000 budget ke andar (sample). Prices are live from TBO.', c:{ids:['h3','h2']}};
+  if(/cancel|refund|ticket|where is/.test(t))
+    return {t:'Hotel bookings can be cancelled from My Trips. Free cancellation applies until 48 hours before check-in (sample policy). Refunds go back to your original payment method.', b:{go:'trips', l:'Open My Trips'}};
+  if(/plan|itinerar|days in|3 days/.test(t))
+    return {t:'Sure. I will build a day-wise plan with route order and estimated spend. Spend is an estimate, not a booking price.', b:{go:'plannerAI', l:'Open AI trip planner'}};
+  if(/cab|taxi|ride|airport/.test(t))
+    return {t:'Live cab comparison for your route. Cab fares are estimates, and I will only mark a cab as booked after the provider confirms.', b:{go:'cabResults', l:'Compare cabs'}};
+  return {t:'I can search cabs, flights, hotels and buses, answer booking questions, or plan a trip. Try one of the suggestions below.'};
+}
+
+/* ---- rewards, membership, loyalty ---- */
+SCR.rewards = () => `
+<div class="hdr" style="padding-top:16px"><h2 style="font-size:20px">Rewards</h2></div>
+<div class="pad">
+  <div class="memcard">
+    <div class="mu">Rido Membership</div>
+    <h3 style="font-size:19px;margin:4px 0">${S.member ? MEM[S.member].n + ' · Active' : 'Not a member yet'}</h3>
+    <div class="mu">${S.member ? 'Renews 25 Dec 2026 (sample)' : 'Ride Pro, Pro Plus and Ride Max. Benefits apply automatically at checkout.'}</div>
+    <button class="btn sm" data-go="membership" style="margin-top:10px">${S.member ? 'My membership' : 'See plans'}</button>
+  </div>
+  <div class="card">
+    <div class="mu">Rido Points</div>
+    <div class="big">${S.points.toLocaleString('en-IN')}</div>
+    <div class="mu">Earn on flights, hotels, buses and memberships. Use as a discount at checkout.</div>
+    <button class="btn sm g" data-go="loyalty" style="margin-top:10px">View points</button>
+  </div>
+  <div class="card warn">Cab rides booked in the Uber, Ola or Rapido app do not earn points, because Rido does not process that payment.</div>
+</div>`;
+
+SCR.membership = () => {
+  if(S.member){
+    const m = MEM[S.member];
+    return `${H('My membership')}
+<div class="pad">
+  <div class="memcard"><span class="pill ok">Active</span><h3 style="font-size:19px;margin:8px 0 2px">${m.n}</h3><div class="mu">Renews 25 Dec 2026 (sample) · auto-renew on</div></div>
+  <div class="h3">Benefits used this month</div>
+  <div class="card"><div class="kv"><span>Bookings with benefits</span><b>2</b></div><div class="kv"><span>Savings applied (sample)</span><b>${R(240)}</b></div></div>
+  <div class="card"><b>Renewal and cancellation</b><div class="mu" style="margin-top:4px">You get a reminder before each renewal. On cancellation, benefits stop at the end of the paid period. Membership can be restored on a new phone.</div></div>
+  <button class="btn g" data-act="cancelMem">Cancel membership</button>
+</div>`;
+  }
+  return `${H('Membership')}
+<div class="pad">
+  <div class="seg" style="width:100%">
+    <button class="${S.mBill==='monthly'?'on':''}" data-act="mBill" data-arg="monthly">Monthly</button>
+    <button class="${S.mBill==='yearly'?'on':''}" data-act="mBill" data-arg="yearly">Yearly</button>
+  </div>
+  ${Object.keys(MEM).map(k=>`
+  <div class="plan ${S.mPlan===k?'on':''}" data-act="choosePlan" data-arg="${k}">
+    <div class="row"><b>${MEM[k].n}</b><span class="sp"></span>${MEM[k].tag?`<span class="pill or">${MEM[k].tag}</span>`:''}</div>
+    <div class="price">Price TBC</div>
+    <div class="mu">Set from the admin panel after Rido confirms the commercial review.</div>
+    <ul>${MEM[k].b.map(x=>`<li>${x}</li>`).join('')}</ul>
+  </div>`).join('')}
+  <div class="card warn">Benefits shown are illustrative. Final tiers, prices and renewal terms are confirmed with Rido. Store rules may apply to in-app purchases.</div>
+  <button class="btn" data-act="subscribe">Subscribe to ${MEM[S.mPlan].n}</button>
+</div>`;
+};
+
+SCR.loyalty = () => `
+${H('Rido Points')}
+<div class="pad">
+  <div class="card"><div class="mu">Balance</div><div class="big">${S.points.toLocaleString('en-IN')} pts</div><div class="mu">About ${R(Math.floor(S.points/10))} at checkout (sample rate). Expires 31 Mar 2027 (sample).</div></div>
+  <div class="card row"><div class="sp"><b>Use points at checkout</b><div class="mu">Up to 10% of a booking (sample)</div></div><span class="pill ${S.usePts?'ok':'gr'}">${S.usePts?'On at next checkout':'Off'}</span></div>
+  <div class="h3">How to earn</div>
+  <div class="card">
+    <div class="kv"><span>Flight, hotel or bus booked in Rido</span><b style="color:var(--ok)">Earn</b></div>
+    <div class="kv"><span>Membership purchase</span><b style="color:var(--ok)">Earn</b></div>
+    <div class="kv"><span>Cab ride in Uber, Ola or Rapido</span><b style="color:var(--bad)">No points</b></div>
+  </div>
+  <div class="h3">History</div>
+  <div class="card">
+    <div class="kv"><span>Hotel booking · 2 Dec</span><b style="color:var(--ok)">+120</b></div>
+    <div class="kv"><span>Used at checkout · 28 Nov</span><b>−500</b></div>
+    <div class="kv"><span>Bus ticket · 20 Nov</span><b style="color:var(--ok)">+45</b></div>
+  </div>
+</div>`;
+
+/* ---- profile, notifications ---- */
+SCR.profile = () => `
+<div class="hdr" style="padding-top:16px"><h2 style="font-size:20px">Profile</h2></div>
+<div class="pad">
+  <div class="card row"><div class="av">PS</div><div class="sp"><b>Priya Sharma</b><div class="mu">+91 ••••• ••021 · priya@example.com</div></div></div>
+  <div class="h3">Saved travellers <span class="mu">saved once, reused on every booking</span></div>
+  <div class="card" style="padding:4px 14px">
+    ${S.travellers.map(t=>`<div class="trav"><div class="av">${t.name.split(' ').map(x=>x[0]).join('')}</div><div class="sp"><b>${t.name}</b><div class="mu">${t.rel} · DOB ${t.dob}</div></div><span class="pill gr">Saved</span></div>`).join('')}
+  </div>
+  <button class="btn g" data-act="addFam">+ Add family member</button>
+  <div class="h3">Language</div>
+  <div class="chips">${['English','Hindi','Hinglish'].map(l=>chip(l, S.lang===l, 'lang', l)).join('')}</div>
+  <div class="h3">Notifications</div>
+  <div class="card" style="padding:4px 14px">
+    <div class="tg2"><div class="sp"><b>Trip reminders</b><div class="mu">Ride pickups and check-ins</div></div><button class="tog ${S.nOn.r?'on':''}" data-act="nOn" data-arg="r"></button></div>
+    <div class="tg2" style="border:0"><div class="sp"><b>Smart travel suggestions</b><div class="mu">After a booking, only when relevant</div></div><button class="tog ${S.nOn.p?'on':''}" data-act="nOn" data-arg="p"></button></div>
+  </div>
+</div>`;
+
+SCR.notifs = () => `
+${H('Notifications', '<button class="lnk" data-act="readAll">Read all</button>')}
+<div class="pad">
+  ${S.notifs.map((n,i)=>`
+  <div class="card nt ${n.read?'':'unread'}">
+    <span class="ic">${ICON[n.k]||'🔔'}</span>
+    <div class="sp" style="min-width:0">
+      <b>${n.t}</b>
+      <div class="mu" style="margin-top:2px">${n.sub}</div>
+      <div class="mu" style="margin-top:4px">${n.time}</div>
+      ${n.k==='ride' && !n.done ? `<div class="row" style="margin-top:10px"><button class="btn sm" data-act="rideYes" data-arg="${i}">Yes, I took it</button><button class="btn sm g" data-act="rideNo" data-arg="${i}">No</button></div>` : ''}
+      ${n.done ? `<div style="margin-top:8px"><span class="pill ok">${n.done}</span></div>` : ''}
+    </div>
+  </div>`).join('')}
+</div>`;
+
+SCR.notes = null; // placeholder (not a screen)
+const NOTE = {
+  voice:'New first screen (Section E1, item 32). One mic button. The spoken trip fills pickup and destination, then the results open. “Type instead” opens classic search. Smart service choice: a city trip opens cabs, an intercity trip opens buses first, and a long trip opens flights. Try the three example phrases.',
+  home:'Service selector for Cabs, Flights, Hotels and Intercity Bus, with the mic and recent searches. No promotional clutter (UI/UX direction). The Jaipur trip card links to the connected itinerary.',
+  cabSearch:'Cabs keep the compare-and-redirect model. The GPS button re-detects the current location, fills pickup automatically, and needs no map pin or new Google API (item 3).',
+  cabResults:'Cheapest is the lowest starting fare, decided on the server, so Android and iOS always agree. Fastest needs a linked account, so it is disabled until one is linked. All cab prices are shown as estimates.',
+  cabRedirect:'Booking happens in the Uber, Ola or Rapido app. Rido does not take payment for cab rides and does not mark the ride as booked.',
+  notifs:'“Did you take this ride?” confirms a redirected ride and saves it to Activity and savings. Unanswered prompts stay in the notification centre. Rido never counts a cab as booked without this confirmation.',
+  flightSearch:'Flights come through TBO and are booked inside Rido. Flexible dates (±3 days) run a separate supplier search per date, so a wider window costs more API calls. Budget is used for recommendations.',
+  flightResults:'Top three options for the budget, each labelled with its reason (lowest cost, fastest, most convenient). When direct fares exceed the budget, the screen shows nearby airports, connections and a bus alternative. The threshold is set in the admin panel.',
+  travellers:'Traveller details are saved once (self and family), pre-filled and reused on every booking. Hotels ask for guest details; buses also ask for the boarding point.',
+  addons:'Seats, meals and baggage are optional and depend on what the airline offers. Web check-in and boarding passes remain with the airline.',
+  seats:'Seat map from the TBO bus API. Booked seats are greyed out. A bus ticket is cancelled as a whole, so seat-level cancellation is not offered.',
+  hotelSearch:'Hotels and homestays through the TBO Hotel API. Homestays appear only where TBO carries them.',
+  hotelResults:'Budget top three with the reason for each option (the same recommendation rules as flights). Compare by price, rating and amenities.',
+  hotelDetail:'Room types, inclusions and the cancellation policy are shown before payment. Pick a room, then continue to guest details.',
+  busSearch:'Intercity bus through TBO. For intercity trips the smart service choice shows buses first.',
+  busResults:'Bus list sorted by price, with operator, type and timings. Selecting a bus opens the seat map.',
+  review:'One Rido checkout for every paid service. The price shown is the price paid, with no separate convenience fee. Rido Points can be used as a discount within a set cap. Demo buttons show a failed payment and a booking that fails after payment (automatic refund).',
+  payResult:'Payment success, failure and pending states are shown clearly. If a booking fails after payment, the refund starts automatically and the status shows Refund pending (Payments & Refunds, step 5).',
+  confirm:'Booking confirmation with a reference, saved to My Trips. After a flight, Rido offers a hotel and an airport ride with one tap. “No thanks” is not asked again for this trip.',
+  trips:'My Trips groups every booking in one place, with cab activity and savings. Savings are estimates, and cab rides appear here only after the user confirms them.',
+  tripDetail:'The connected trip. Ride legs come from flight times and the hotel address. Use the demo button: a 5:00 pm flight moving to 6:00 pm moves the 3:00 pm pickup to 4:00 pm, and the reminder updates automatically (item 12).',
+  plannerAI:'AI Journey & Timing Planner (item 35). Builds a day-wise plan with route order and estimated spend. Every spend figure is labelled as an estimate. Rido does not book attractions or activities.',
+  assistant:'Chat & Voice-Based Booking Assistant (item 33). Replies are scripted in this POC. The AI understands the request and routes it; every price comes from Rido data, the cab connector or TBO. Try the Hinglish example.',
+  rewards:'Membership and Rido Points are shared across all services. Cab rides in provider apps do not earn points.',
+  membership:'Three tiers: Ride Pro, Pro Plus and Ride Max. Prices show as TBC until Rido confirms the commercial review. Plans are managed from the admin panel without an app update.',
+  loyalty:'Points are earned on flights, hotels, buses and memberships, and used as a discount at checkout, up to a cap. Expiry is shown with a reminder.',
+  profile:'Saved travellers, language and notification settings. Opt-outs are respected, and frequency limits apply.'
+};
+
+Object.assign(NOTE, {
+  voice:'Voice landing (AI travel assistant and voice booking, v1.6.1). The user speaks the whole trip. The AI identifies origin, destination, duration, budget and services and fills the fields. One follow-up question is asked only when dates are essential. Every field can be corrected. “Type instead” opens the classic search.',
+  tripPlan:'Intelligent recommendations. Shows the top options for the budget (or the closest fit if none fits). Each option combines flights, hotel, airport transfers and cabs, with one plain sentence explaining why. Ranking follows the user’s priority, cost first by default. When direct flights exceed the admin threshold, Rido adds connections, other timings and a bus option. Flexible dates are searched per date.',
+  tripItin:'AI trip planner and connected itinerary. A three-day plan: flight, transfers, hotel check-in, sightseeing in route order, and return. The estimated expenditure is compared with the budget. The user can change the flight, the hotel or the sightseeing. Changes to a confirmed booking need approval under supplier rules.',
+  tripSummary:'Consolidated booking summary. Each line shows its real status. Flights and the hotel are confirmed only when TBO returns confirmation. Transfers are confirmed only when the cab provider confirms. A cab is never shown as booked before that.',
+  tripDetail:'Connected trip in My Trips. Ride legs are created from flight times and the hotel. The demo button moves the linked airport pickup when the flight is delayed. Flight-delay updates come from a separate flight-status provider, because TBO does not provide them.',
+  plannerAI:'Alias of the trip itinerary.'
+});
+
+/* ================= ACTIONS ================= */
+const ACT = {};
+ACT.noop = () => {};
+ACT.reset = () => location.reload();
+ACT.mic = () => { ACT.say(S.vi % 3); S.vi++; };
+const VOICE = [
+  {say:'I need to go to Malviya Nagar', to:'Malviya Nagar, Jaipur', svc:'Cabs (city trip)', target:'cabResults', why:'City trip → cab comparison.'},
+  {say:'Delhi to Jaipur', to:'Jaipur', svc:'Intercity bus first', target:'busResults', why:'Intercity trip → bus options shown first. Flights are one tap away.'},
+  {say:'Mumbai to Hyderabad', to:'Hyderabad', svc:'Flights', target:'flightResults', why:'Long trip → flights, unless the user names another mode.'}
+];
+ACT.say = (i) => {
+  i = +i; S.listen = true; S.heard = null; render();
+  clearTimeout(S.t);
+  S.t = setTimeout(()=>{ S.listen=false; S.heard=VOICE[i]; render(); }, 1100);
+};
+ACT.voiceGo = (arg) => {
+  const [target, to] = arg.split('|');
+  if(target==='cabResults' && to) S.cab.to = to;
+  S.heard = null;
+  S.stack = [{s:'home'}, {s:target}];
+  render();
+};
+ACT.swap = () => toast('Pickup and drop swapped');
+ACT.gps = () => toast('Location re-detected from GPS (no map pin)');
+ACT.sortCab = (arg) => {
+  if(arg==='fast' && !S.linked){ toast('Link an account to sort by Fastest'); return; }
+  S.sort = arg; render();
+};
+ACT.link = () => { S.linked = true; toast('Linked (demo). Rido never sees your provider password.'); render(); };
+ACT.cabBack = (p) => {
+  S.notifs.unshift({k:'ride', t:`Did you take this ${p} ride?`, sub:'Confirm to save it in Activity and savings. The fare was an estimate.', time:'Just now', read:false, p});
+  S.stack = [{s:'home'}, {s:'notifs'}];
+  render();
+};
+ACT.rideYes = (i) => {
+  const n = S.notifs[i]; n.done = 'Saved to Activity'; n.read = true;
+  S.cabLog.unshift({p:n.p, when:'Just now', st:'Taken', sv:40});
+  toast('Ride saved to Activity'); render();
+};
+ACT.rideNo = (i) => { const n = S.notifs[i]; n.done = 'Marked as not taken'; n.read = true; render(); };
+ACT.readAll = () => { S.notifs.forEach(n=>n.read=true); render(); };
+ACT.flex = () => { S.flex = !S.flex; render(); };
+ACT.fsort = (a) => { S.fsort = a; render(); };
+ACT.pick = (id) => startBk(id);
+function startBk(id){
+  const it = ITEMS[id]; if(!it) return;
+  S.bk = {type: it.type, item: it, room:'deluxe', seats:[]};
+  S.addons = {};
+  const next = {flight:'travellers', hotel:'hotelDetail', bus:'seats'}[it.type];
+  go(next);
+}
+ACT.pax = (id) => {
+  if(S.pax.includes(id)){ if(S.pax.length>1) S.pax = S.pax.filter(x=>x!==id); }
+  else S.pax = [...S.pax, id];
+  render();
+};
+ACT.addon = (k) => { S.addons[k] = !S.addons[k]; render(); };
+ACT.room = (k) => { S.bk.room = k; render(); };
+ACT.seat = (id) => {
+  const i = S.bk.seats.indexOf(id);
+  if(i>-1) S.bk.seats.splice(i,1);
+  else if(S.bk.seats.length<6) S.bk.seats.push(id);
+  else { toast('You can select up to 6 seats'); return; }
+  render();
+};
+ACT.seatsNext = () => {
+  if(!S.bk.seats.length){ toast('Select at least one seat'); return; }
+  go('travellers');
+};
+ACT.pts = () => { S.usePts = !S.usePts; render(); };
+ACT.payM = (m) => { S.payM = m; render(); };
+ACT.pay = (mode) => {
+  const p = priceOf(S.bk);
+  const id = 'RDO-' + S.bk.type[0].toUpperCase() + '-' + (1000 + Math.floor(Math.random()*8999));
+  S.lastBk = {...S.bk, id, total:p.total, earn:p.earn, discount:p.discount, ref:refOf(S.bk.type), status:'Processing', cabLog:undefined};
+  S.pay = {state:'processing'};
+  go('payResult');
+  setTimeout(()=>{
+    if(mode==='payfail'){ S.pay.state='failed'; }
+    else if(mode==='bookfail'){ S.pay.state='refund'; S.lastBk.status='Refund pending'; }
+    else { S.pay.state='success'; S.lastBk.status='Confirmed'; S.points = S.points + p.earn - p.discount; S.usePts=false; }
+    if(mode!=='payfail'){
+      S.bookings.unshift({...S.lastBk});
+      S.notifs.unshift({k:'pay', t: mode==='bookfail' ? 'Booking failed · refund started' : 'Booking confirmed', sub: titleOf(S.lastBk), time:'Just now', read:false});
+      S.lastBk.bookingPushed = true;
+    }
+    render();
+  }, 1600);
+};
+ACT.toConfirm = () => swap('confirm');
+ACT.noHotel = () => { S.noHotel = true; toast("Won't ask again for this trip"); render(); };
+ACT.noRide = () => { S.noRide = true; toast("Won't ask again for this trip"); render(); };
+ACT.delay = () => {
+  S.delay = !S.delay;
+  if(S.delay) S.notifs.unshift({k:'delay', t:'Flight delayed by 1 hour', sub:'Airport pickup moved one hour later. Reminder updated.', time:'Just now', read:false});
+  render();
+};
+ACT.plan = () => { S.planGen = true; render(); };
+ACT.relax = () => { S.relax = true; toast('Day 2 re-planned with a slower pace'); render(); };
+ACT.intr = (k) => { S.interests[k] = !S.interests[k]; render(); };
+ACT.pace = (p) => { S.pace = p; render(); };
+ACT.savePlan = () => {
+  S.bookings.unshift({id:'PLAN-JAI-3D', type:'plan', item:{name:'3-day Jaipur plan'}, total:0, status:'Saved', ref:'Saved plan (estimate only)', title:'3-day Jaipur plan'});
+  toast('Plan saved to My Trips'); render();
+};
+ACT.sugg = (txt) => { const el=$('#chatIn'); if(el) el.value = txt; ACT.asSend(); };
+ACT.asSend = () => {
+  const el = $('#chatIn'); const txt = (el ? el.value : '').trim();
+  if(!txt) return;
+  S.chat.push({f:'u', t:txt});
+  const r = botReply(txt);
+  S.chat.push({f:'ai', t:r.t, c:r.c, b:r.b});
+  render();
+  const sc = $('#chat'); if(sc) sc.scrollTop = 1e6;
+};
+ACT.asMic = () => {
+  S.chat.push({f:'u', t:'🎙️ Mujhe kal subah Delhi se Jaipur jaana hai'});
+  const r = botReply('mujhe kal subah delhi se jaipur jaana hai');
+  S.chat.push({f:'ai', t:r.t, c:r.c});
+  render();
+};
+ACT.chatPick = (id) => startBk(id);
+ACT.pax = ACT.pax;
+ACT.payM = ACT.payM;
+ACT.seat = ACT.seat;
+ACT.mBill = (b) => { S.mBill = b; render(); };
+ACT.choosePlan = (k) => { S.mPlan = k; render(); };
+ACT.subscribe = () => {
+  S.member = S.mPlan;
+  S.notifs.unshift({k:'mem', t:`${MEM[S.mPlan].n} is active`, sub:'Benefits apply automatically at checkout. Plans and prices are confirmed with Rido.', time:'Just now', read:false});
+  toast('Membership active (demo)'); render();
+};
+ACT.cancelMem = () => { S.member = null; toast('Membership cancelled. Benefits end at the paid period.'); render(); };
+ACT.addFam = () => {
+  if(S.famAdded){ toast('Family member already added (demo)'); return; }
+  S.travellers.push({id:'mom', name:'Meera Sharma', rel:'Mother', dob:'02 Aug 1964'});
+  S.famAdded = true; toast('Family member saved once, reusable on every booking'); render();
+};
+ACT.lang = (l) => { S.lang = l; toast('Language set to ' + l + ' (demo)'); render(); };
+ACT.nOn = (k) => { S.nOn[k] = !S.nOn[k]; render(); };
+ACT.openBk = (id) => {
+  const b = S.bookings.find(x=>x.id===id); if(!b) return;
+  if(b.type==='plan'){ toast('Saved plan: open AI planner to edit'); return; }
+  S.lastBk = b; go('confirm');
+};
+ACT.ins = (arg) => { const [i,v]=arg.split(':'); S.insight[i]=v; renderAdmin(); };
+ACT.rec = (i) => { S.recon[i]='reviewed'; renderAdmin(); };
+ACT.nt = (k) => { S.nOn[k]=!S.nOn[k]; renderAdmin(); };
+ACT.adminSave = () => toast('Saved (demo only, no backend)');
+ACT.resend = () => toast('Ticket re-sent by email (demo)');
+ACT.flt = (f) => { S.aF = f; renderAdmin(); };
+ACT.cmp = () => toast('Campaign scheduled (demo)');
+
+ACT.mic = () => ACT.say(0);
+ACT.say = (i) => {
+  i = +i; S.vMode = i===1 ? 'cab' : 'trip';
+  S.listen = true; S.vHeard = false; render();
+  clearTimeout(S.t);
+  S.t = setTimeout(()=>{ S.listen=false; S.vHeard=true; render(); }, 1200);
+};
+ACT.vDate = (a) => {
+  const p=S.plan;
+  if(a==='flex'){ S.vDates='flex'; p.flex=true; p.depart='10 Dec'; p.ret='12 Dec'; }
+  else { S.vDates=a; p.flex=false; p.depart = a==='7' ? '7 Dec' : '10 Dec'; p.ret = a==='7' ? '9 Dec' : '12 Dec'; }
+  render();
+};
+ACT.vBuild = () => { S.stack=[{s:'home'},{s:'tripPlan'}]; render(); };
+ACT.svc = (k) => {
+  const p=S.plan; p.svc[k] = !p.svc[k];
+  if(k==='flight' || k==='bus') p.mode = p.svc.flight ? 'flight' : (p.svc.bus ? 'bus' : 'none');
+  render();
+};
+ACT.prio = (k) => { const p=S.plan; p.prio=[k].concat(p.prio.filter(x=>x!==k)); render(); };
+ACT.alt = (k) => { if(k==='bus'){ S.plan.svc.bus=true; S.plan.mode = S.plan.svc.flight ? 'flight' : 'bus'; toast('Bus option added to the ranking'); } render(); };
+ACT.flexDate = (i) => {
+  const [d]=TRIP_FLEX[+i]; const p=S.plan; const n=parseInt(d,10);
+  p.depart=d; p.ret=(n+2)+' Dec'; p.flex=true;
+  toast(`Dates set to ${p.depart} – ${p.ret}. Prices are sample estimates.`); render();
+};
+ACT.combo = (key) => {
+  if(S.plan.booked){ toast('This trip is booked. Use the itinerary to request changes.'); return; }
+  const [mode,fid,hid]=key.split('|'); const p=S.plan;
+  p.mode = mode;
+  if(fid!=='-') p.flight=fid;
+  if(hid!=='-') p.hotel=hid;
+  if(mode==='flight') p.svc.flight=true;
+  if(mode==='bus') p.svc.bus=true;
+  go('tripItin');
+};
+ACT.toggleOpen = (k) => { S.plan.open = S.plan.open===k ? null : k; render(); };
+ACT.setFlight = (id) => requestChange('Change flight', ()=>{ S.plan.flight=id; S.plan.mode='flight'; S.plan.svc.flight=true; });
+ACT.setHotel  = (id) => requestChange('Change hotel', ()=>{ S.plan.hotel=id; });
+ACT.sight = (id) => {
+  const p=S.plan;
+  p.sights = p.sights.includes(id) ? p.sights.filter(x=>x!==id) : p.sights.concat(id);
+  render();
+};
+ACT.approve = () => {
+  const pa=S.plan.pendingApproval; if(!pa) return;
+  pa.apply(); S.plan.pendingApproval=null;
+  toast('Approved and sent to the supplier. Supplier rules apply.'); render();
+};
+ACT.cancelApproval = () => { S.plan.pendingApproval=null; render(); };
+ACT.tripPay = () => {
+  const p=S.plan, c=currentCombo(), payNow=c.flights+c.bus+c.hotel;
+  S.lastBk = {type:'trip', item:{}, id:'RDO-T-'+(1000+Math.floor(Math.random()*8999)), total:payNow,
+    ref:'Trip ref RDO-T · JAI–BOM–JAI', status:'Confirmed'};
+  p.st = Object.assign({}, p.st, {out:'Pending TBO', ret:'Pending TBO', hotel:'Pending TBO', transfer:'Awaiting provider'});
+  S.pay = {state:'processing'};
+  go('payResult');
+  setTimeout(()=>{ S.pay.state='success'; p.booked=true; p.st.out='Confirmed'; p.st.ret='Confirmed'; render(); }, 1600);
+  setTimeout(()=>{ p.st.hotel='Confirmed'; render(); }, 2600);
+  setTimeout(()=>{
+    p.st.transfer='Confirmed by provider';
+    S.points += Math.floor(payNow/100);
+    S.bookings.unshift(Object.assign({}, S.lastBk));
+    S.notifs.unshift({k:'pay', t:'Jaipur → Mumbai trip confirmed', sub:'Flights and hotel confirmed by TBO. Transfers confirmed by the cab provider.', time:'Just now', read:false});
+    render();
+  }, 3600);
+};
+
+/* ---- global handlers ---- */
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-tab],[data-root],[data-back],[data-go],[data-act],[data-flow],[data-admin]');
+  if(!el || el.disabled) return;
+  const d = el.dataset;
+  if(d.tab !== undefined) return tab(d.tab);
+  if(d.admin !== undefined){ S.adm = d.admin; tab('admin'); renderAdmin(); return; }
+  if(d.flow !== undefined) return flowGo(d.flow, d.arg);
+  if(d.back !== undefined) return back();
+  if(d.root !== undefined) return root(d.root);
+  if(d.go !== undefined) return go(d.go, d.arg);
+  if(d.act !== undefined){ const f = ACT[d.act]; if(f) f(d.arg, el); }
+});
+document.addEventListener('keydown', e => {
+  if(e.key==='Enter' && e.target && e.target.id==='chatIn') ACT.asSend();
+});
+
+/* ================= ADMIN PANEL ================= */
+const ADMSCR = {};
+function kpi(l,v,s){return `<div class="kpi"><span class="mu">${l}</span><b>${v}</b><span class="mu">${s}</span></div>`;}
+ADMSCR.dash = () => `
+  <h2 class="ah">Dashboard <span class="mu" style="font-size:13px">· today · sample data</span></h2>
+  <div class="kpis">
+    ${kpi('Bookings today','128','+12% vs last week')}
+    ${kpi('Flights','46','via TBO')}
+    ${kpi('Hotels','31','via TBO')}
+    ${kpi('Intercity bus','22','via TBO')}
+    ${kpi('Cab redirects','410','Estimates shown')}
+    ${kpi('Payment failures','3','2 on UPI')}
+  </div>
+  <div class="two-col">
+    <div class="panel"><h3>Pending confirmations <span class="pill wa">7</span></h3><p class="mu">Bookings waiting for TBO confirmation. Visible here and filterable.</p><button class="btn sm" data-admin="bk">Open pending</button></div>
+    <div class="panel"><h3>Refunds in progress <span class="pill in">2</span></h3><p class="mu">Automatic refunds after failed bookings and cancellations.</p><button class="btn sm g" data-admin="recon">Open reconciliation</button></div>
+  </div>
+  <div class="panel">
+    <h3>AI insights <span class="pill or">Decision support</span></h3>
+    ${INSIGHTS.map((x,i)=>`
+    <div class="ins">
+      <div><b>${x.t}</b><div class="mu" style="margin-top:2px">${x.d}</div><div class="act">Suggested action: ${x.a}</div></div>
+      <div class="ins-b">${S.insight[i]
+        ? `<span class="pill ok">${S.insight[i]==='done'?'Marked done':'Dismissed'}</span>`
+        : `<button class="btn sm" data-act="ins" data-arg="${i}:done">Done</button><button class="btn sm g" data-act="ins" data-arg="${i}:dismiss">Dismiss</button>`}</div>
+    </div>`).join('')}
+    <div class="mu" style="margin-top:8px">AI recommendations are decision support only. Admins decide, and the AI cannot change settings or data.</div>
+  </div>`;
+
+ADMSCR.bk = () => {
+  const filters = ['All','Pending','Confirmed','Failed','Refund pending','Cancelled'];
+  const rows = ADMB.filter(b => S.aF==='All' || b.st===S.aF);
+  const pc = st => st==='Confirmed'?'ok':st==='Pending'?'wa':st==='Failed'?'bad':st==='Refund pending'?'in':'gr';
+  return `
+  <h2 class="ah">Flight, hotel &amp; bus bookings</h2>
+  <div class="fbar">${filters.map(f=>`<button class="chip ${S.aF===f?'on':''}" data-act="flt" data-arg="${f}">${f}</button>`).join('')}</div>
+  <div class="panel" style="padding:6px 14px">
+    <table>
+      <tr><th>Booking</th><th>Type</th><th>Traveller</th><th>Route / stay</th><th>Amount</th><th>Status</th><th></th></tr>
+      ${rows.map(b=>`<tr>
+        <td><b>${b.id}</b></td><td>${b.type}</td><td>${b.who}</td><td>${b.route}</td><td>${R(b.amt)}</td>
+        <td><span class="pill ${pc(b.st)}">${b.st}</span></td>
+        <td><button class="btn sm g" data-act="resend">Resend ticket</button></td></tr>`).join('')}
+    </table>
+  </div>
+  <div class="mu" style="margin-top:10px">Pending-status visibility: every booking shows a clear status and can be filtered. Sample data.</div>`;
+};
+
+ADMSCR.recon = () => {
+  const items = [
+    {id:'RDO-B-0877', gw:'₹1,560 captured', tbo:'Not found', bk:'Failed', flag:'Refund not yet issued'},
+    {id:'RDO-F-1038', gw:'₹9,100 captured', tbo:'₹9,100 wallet entry', bk:'Refund pending', flag:'Matched'},
+    {id:'RDO-H-0931', gw:'₹6,400 captured', tbo:'₹6,400 wallet entry', bk:'Pending > 2 hrs', flag:'Pending confirmation'}
+  ];
+  return `
+  <h2 class="ah">Reconciliation <span class="mu" style="font-size:13px">· daily job: gateway vs TBO wallet vs bookings</span></h2>
+  <div class="panel" style="padding:6px 14px">
+    <table>
+      <tr><th>Booking</th><th>Gateway</th><th>TBO wallet</th><th>Booking status</th><th>Result</th><th></th></tr>
+      ${items.map((x,i)=>`<tr><td><b>${x.id}</b></td><td>${x.gw}</td><td>${x.tbo}</td><td>${x.bk}</td>
+        <td>${x.flag==='Matched'?'<span class="pill ok">Matched</span>':`<span class="pill bad">${x.flag}</span>`}</td>
+        <td>${x.flag==='Matched' ? '' : (S.recon[i]==='reviewed' ? '<span class="pill ok">Reviewed</span>' : `<button class="btn sm" data-act="rec" data-arg="${i}">Mark reviewed</button>`)}</td></tr>`).join('')}
+    </table>
+  </div>
+  <div class="mu" style="margin-top:10px">Mismatches are flagged for review. The job compares gateway payments, TBO wallet entries and bookings every day.</div>`;
+};
+
+ADMSCR.plans = () => `
+  <h2 class="ah">Membership &amp; loyalty</h2>
+  <div class="two-col">
+    <div class="panel">
+      <h3>Membership plans</h3>
+      <table>
+        <tr><th>Plan</th><th>Price</th><th>Billing</th></tr>
+        ${Object.keys(MEM).map(k=>`<tr><td><b>${MEM[k].n}</b></td><td><input placeholder="TBC"></td><td><select><option>Monthly</option><option>Yearly</option></select></td></tr>`).join('')}
+      </table>
+      <p class="mu" style="margin-top:8px">Prices and benefits are set here, so they change without an app update. Final values are confirmed with Rido.</p>
+    </div>
+    <div class="panel">
+      <h3>Loyalty rules</h3>
+      <table>
+        <tr><th>Rule</th><th>Value</th></tr>
+        <tr><td>Earn rate</td><td><input value="1 point per ₹100 (sample)"></td></tr>
+        <tr><td>Redemption value</td><td><input value="₹1 per point (sample)"></td></tr>
+        <tr><td>Max use per booking</td><td><input value="10% (sample)"></td></tr>
+        <tr><td>Expiry</td><td><input value="365 days (sample)"></td></tr>
+        <tr><td>Referral reward</td><td><input placeholder="TBC"></td></tr>
+        <tr><td>Cab rides earn points</td><td><input value="No (fixed)" disabled></td></tr>
+      </table>
+    </div>
+  </div>
+  <div class="row" style="margin-top:12px"><button class="btn sm" data-act="adminSave">Save changes</button><span class="mu">Demo only. No backend connected.</span></div>`;
+
+ADMSCR.notif = () => `
+  <h2 class="ah">Notifications &amp; campaigns</h2>
+  <div class="panel">
+    <h3>Journey triggers</h3>
+    <div class="tg2"><div class="sp"><b>Viewed results, did not book</b><div class="mu">Sent after 2 hrs · max 1 a day · opt-out respected</div></div><button class="tog ${S.nOn.r?'on':''}" data-act="nt" data-arg="r"></button></div>
+    <div class="tg2"><div class="sp"><b>Pre-booking and pickup reminders</b><div class="mu">Timed from the flight and the trip plan</div></div><button class="tog ${S.nOn.p?'on':''}" data-act="nt" data-arg="p"></button></div>
+    <div class="tg2" style="border:0"><div class="sp"><b>Installed but never opened</b><div class="mu">Not possible: stores do not share install data. Phones only receive pushes after the app has been opened once.</div></div><button class="tog" disabled style="opacity:.4"></button></div>
+  </div>
+  <div class="panel">
+    <h3>Scheduled campaign</h3>
+    <div class="two"><div class="field" style="margin:0"><label>Name</label><input value="Festive offer (sample)"></div><div class="field" style="margin:0"><label>Audience</label><input value="Users inactive 30 days"></div></div>
+    <div class="row" style="margin-top:10px"><button class="btn sm" data-act="cmp">Schedule campaign</button><span class="mu">Start and end dates, audience, one-tap deep link to a screen.</span></div>
+  </div>`;
+
+ADMSCR.roles = () => `
+  <h2 class="ah">Roles &amp; access</h2>
+  <div class="panel" style="padding:6px 14px">
+    <table>
+      <tr><th>Role</th><th>Can access</th><th>Cannot access</th></tr>
+      <tr><td><b>Super admin</b></td><td>All pages, settings and roles</td><td>—</td></tr>
+      <tr><td><b>Finance</b></td><td>Payments, refunds, reconciliation, settlement</td><td>Campaigns</td></tr>
+      <tr><td><b>Support</b></td><td>Bookings, resend ticket, help content</td><td>Refund approval, plan prices</td></tr>
+      <tr><td><b>Marketing</b></td><td>Notifications, campaigns, loyalty rules (view)</td><td>Payments, refunds</td></tr>
+    </table>
+  </div>
+  <div class="mu" style="margin-top:10px">Starting roles are confirmed with Rido before build (proposal item 10).</div>`;
+
+ADMSCR.reco = () => `
+  <h2 class="ah">Recommendations &amp; thresholds</h2>
+  <div class="two-col">
+    <div class="panel"><h3>Alternatives threshold</h3>
+      <div class="field" style="margin:0"><label>Flight fare above (per adult, return)</label><input value="₹7,500"></div>
+      <p class="mu" style="margin-top:8px">When a direct fare is above this, Rido shows connections, other timings, nearby airports where practical and a bus option.</p></div>
+    <div class="panel"><h3>Flexible dates</h3>
+      <div class="field" style="margin:0"><label>Default window</label><input value="±3 days"></div>
+      <p class="mu" style="margin-top:8px">Each date is a separate supplier search, so a wider window costs more API calls.</p></div>
+  </div>
+  <div class="panel"><h3>Ranking default</h3>
+    <table><tr><th>Order</th><th>Rule</th></tr>
+      <tr><td>1</td><td>Cost: total estimated trip cost</td></tr>
+      <tr><td>2</td><td>Travel time: flight duration</td></tr>
+      <tr><td>3</td><td>Convenience: non-stop flight and hotel rating</td></tr></table></div>
+  <div class="panel"><h3>Trip rules</h3>
+    <div class="tg2"><div class="sp"><b>Budget fit shown on every option</b><div class="mu">Within budget, or the amount over budget</div></div><span class="pill ok">On</span></div>
+    <div class="tg2" style="border:0"><div class="sp"><b>Changes to confirmed bookings need approval</b><div class="mu">Supplier modification and cancellation rules apply</div></div><span class="pill ok">On</span></div></div>
+  <div class="row" style="margin-top:12px"><button class="btn sm" data-act="adminSave">Save changes</button><span class="mu">Demo only. No backend connected.</span></div>`;
+
+function renderAdmin(){
+  const nav = [['dash','Dashboard'],['bk','Bookings'],['recon','Reconciliation'],['plans','Membership & loyalty'],['notif','Notifications'],['reco','Recommendations'],['roles','Roles & access']];
+  $('#adm').innerHTML = `
+    <div class="adm">
+      <aside>
+        <div class="logo" style="margin-bottom:16px;font-size:15px">RIDO ADMIN</div>
+        ${nav.map(([k,l])=>`<button class="${S.adm===k?'on':''}" data-admin="${k}">${l}</button>`).join('')}
+        <div class="mu" style="margin-top:18px">Existing admin panel, with new pages for payments, membership, loyalty and bookings.</div>
+      </aside>
+      <main>${ADMSCR[S.adm]()}</main>
+    </div>`;
+}
+
+/* ================= INIT ================= */
+render();
+renderAdmin();
+</script>
+</body>
+</html>
